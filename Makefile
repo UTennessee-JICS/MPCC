@@ -9,7 +9,7 @@ CXXFLAGS	= -std=c++11 -Wall -g -O3 -qopenmp -pthread -m64 -qopt-assume-safe-padd
 #CXXFLAGS	 ?= -std=c++11 -Wall -g -O3 -qopenmp -qopt-assume-safe-padding -qopt-report=5 -xAVX
 
 
-SRCDIRS = ./
+SRCDIRS = ./src/
 SRCFILES = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/MPCC.cpp))
 SRCS = MPCC.cpp $(SRCFILES) 
 OBJS = $(SRCFILES:%.cpp=%.o)
