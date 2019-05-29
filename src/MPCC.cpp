@@ -301,20 +301,17 @@ int pcc_naive(int m, int n, int p,
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
-//P = [N sum(AB) - (sumA)(sumB)] /
-//    sqrt[ (N sumA^2 - (sum A)^2)[ (N sumB^2 - (sum B)^2) ]
-//int pcc_matrix(int m, int n, int p, int count,
-//	       DataType* A, DataType* B, bool transposeB, DataType* P)	       
+//P = [ sum(AB) - (sumA)(sumB)/N] /
+//    sqrt[ ( sumA^2 -(1/N) (sum A/)^2)[ ( sumB^2 - (1/N)(sum B)^2) ]
 int pcc_matrix(int m, int n, int p,
 	       DataType* A, DataType* B, DataType* P)	       
 {
-#if 1
   int i,j,k;
   int stride = ((n-1)/64 +1);
   DataType alpha=1.0;
   DataType beta=0.0;
   int count =1;
-  bool transposeB = true;
+  bool transposeB = true; //assume this is always true. 
 
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
@@ -419,10 +416,10 @@ int pcc_matrix(int m, int n, int p,
     unsigned long ul_n = n;
     #pragma omp parallel for private(i)
     for(i=0; i<m*p; i++){
-      //N[i] = ul_n-M[i];
       N[i] = 1./(ul_n-M[i]);
       if(isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
     }
+    mkl_free(M);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
@@ -452,10 +449,6 @@ int pcc_matrix(int m, int n, int p,
 
     //Compute PCC terms and assemble
      
-    //SA = A*UnitB
-    //Compute sum of A for each AB row col pair.
-    // This requires multiplication with a UnitB matrix which acts as a mask 
-    // to prevent missing data in AB pairs from contributing to the sum
 
     CBLAS_TRANSPOSE transB=CblasNoTrans;
     int ldb=p;
@@ -477,7 +470,6 @@ int pcc_matrix(int m, int n, int p,
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
@@ -486,7 +478,6 @@ int pcc_matrix(int m, int n, int p,
     //Compute sum of AA for each AB row col pair.
     // This requires multiplication with a UnitB matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
@@ -494,7 +485,6 @@ int pcc_matrix(int m, int n, int p,
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
@@ -511,15 +501,12 @@ int pcc_matrix(int m, int n, int p,
     accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
     //printf("All(5) SGEMMs (%e)s GFLOPs=%e \n", accumSGEMM, 5*(2/1.0e9)*m*n*p/accumSGEMM);
 
-    //DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
     DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* NSASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
    
-    //DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
     DataType* NSASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
     
-    //DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
     DataType* NSBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
     
@@ -530,37 +517,34 @@ int pcc_matrix(int m, int n, int p,
 
     //SASB=SA*SB
     vsMul(m*p,SA,SB,SASB);
-    //NSASB
+    //N*SASB
     vsMul(m*p,N,SASB,NSASB); //ceb
-    
 
     //SAB=(-1)NSASB+SAB  (numerator)
     cblas_saxpy(m*p,(DataType)(-1), NSASB,1, SAB,1); //ceb
 
+    //(SA)^2
     vsSqr(m*p,SA,SASA);
+    //N(SA)^2
     vsMul(m*p,N,SASA,NSASA); //ceb
-    //SAA=(-1)NSASA+SAA (denominator term 1)
+    //SAA=SAA-NSASA (denominator term 1)
     cblas_saxpy(m*p,(DataType)(-1), NSASA,1, SAA,1);
 
+    //(SB)^2
     vsSqr(m*p,SB,SBSB);
+    //N(SB)^2
     vsMul(m*p,N,SBSB,NSBSB);
-    //SBB=(-1)NSBSB+SBB
+    //SBB=SBB-NSBSB
     cblas_saxpy(m*p,(DataType)(-1), NSBSB,1, SBB,1);
 
-#if 0
-    for(int i=0;i<m*p;++i){
-       if(SAA[i]==0.){printf("SAA[%d]=%e\n",i,SAA[i]);SAA[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
-       if(SBB[i]==0.){printf("SBB[%d]=%e\n",i,SBB[i]);SBB[i]=1;}
-    }
-#endif
-    //element by element multiplication of vector X by Y, return in Z
+    //DENOM=SAA*SBB (element wise multiplication)
     vsMul(m*p,SAA,SBB,DENOM);
     for(int i=0;i<m*p;++i){
        if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
     }
-    //element by element sqrt of vector DENOM
+    //sqrt(DENOM)
     vsSqrt(m*p,DENOM,DENOMSqrt);
-    //element by element division of vector X by Y, return in Z
+    //P=SAB/DENOMSqrt (element wise division)
     vsDiv(m*p,SAB,DENOMSqrt,P);   
 
     mkl_free(SASA);
@@ -574,15 +558,12 @@ int pcc_matrix(int m, int n, int p,
   }
 
   mkl_free(N);
-  mkl_free(M);
-  mkl_free(amask);
-  mkl_free(bmask);
   mkl_free(SA);
   mkl_free(SAA);
   mkl_free(SB);
   mkl_free(SBB);
   mkl_free(SAB);
-#endif
+
   return 0;
 };
 
@@ -621,23 +602,20 @@ int main (int argc, char **argv) {
   //C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
   clock_gettime(CLOCK_MONOTONIC, &startPCC);
 #if 0
-DEV_CHECKPT
   printf("naive PCC implmentation\n");
   //pcc_naive(m, n, p, count, A, B, C);
   pcc_naive(m, n, p, A, B, R);
 #else  
-DEV_CHECKPT
   printf("matrix PCC implmentation\n");
   //pcc_matrix(m, n, p, count, A, B, transposeB, R);
   pcc_matrix(m, n, p, A, B, R);
 #endif
-DEV_CHECKPT
   clock_gettime(CLOCK_MONOTONIC, &stopPCC);
   accumR =  (TimeSpecToSeconds(&stopPCC)- TimeSpecToSeconds(&startPCC));
 
 
 
-#if 1
+#if 0
   //read in results file for comparison
   fstream test_file;
   //test_file.open("results_6k_x_29k_values.txt",ios::in);
@@ -658,7 +636,6 @@ DEV_CHECKPT
   }
 #endif 
 
- DEV_CHECKPT
 #if 0
     //write R matrix to file
     fstream mat_R_file;
@@ -669,27 +646,26 @@ DEV_CHECKPT
     mat_R_file.close();
 #endif
  
-DEV_CHECKPT
   DataType R_2norm = 0.0;
   DataType C_2norm = 0.0;
   DataType diff_2norm = 0.0;
   DataType relativeNorm = 0.0;
 
-#if 1
+#if 0
   for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
   C_2norm=sqrt(C_2norm);
   for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
   R_2norm=sqrt(R_2norm);
   diff = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
-DEV_CHECKPT
   for (int i=0; i<m*p; i++) { 
      diff[i]=pow(C[i]-R[i],2);
      diff_2norm += diff[i]; 
   }
 
-DEV_CHECKPT
   diff_2norm = sqrt(diff_2norm);
   relativeNorm = diff_2norm/R_2norm;
+  printf("R_2Norm=%e, C_2Norm=%e, diff_2norm=%e relativeNorm=%e\n", R_2norm, C_2norm, diff_2norm, relativeNorm);
+  printf("relative diff_2Norm = %e in %e s m=%d n=%d p=%d GFLOPs=%e \n", relativeNorm, accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
 #endif
 
 
@@ -704,10 +680,9 @@ DEV_CHECKPT
 #endif
 
 
-DEV_CHECKPT
 
-  printf("R_2Norm=%e, C_2Norm=%e, diff_2norm=%e relativeNorm=%e\n", R_2norm, C_2norm, diff_2norm, relativeNorm);
-  printf("relative diff_2Norm = %e in %e s m=%d n=%d p=%d GFLOPs=%e \n", relativeNorm, accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
+
+  printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
 
   return 0;
 }
