@@ -1,0 +1,7 @@
+*.so
+*.o
+config.log
+config.status
+*.cache
+configure
+src/Makevars
