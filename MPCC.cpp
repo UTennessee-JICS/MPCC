@@ -247,13 +247,14 @@ printf("_n=%d p=%d\n",_n,p);
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
 // C = [N sum(AB) - (sumA)(sumB)] /
 //     sqrt[ (N sumA^2 - (sum A)^2)[ (N sumB^2 - (sum B)^2) ]
-int pcc_naive(int m, int n, int p, int count,
+//int pcc_naive(int m, int n, int p, int count,
+int pcc_naive(int m, int n, int p,
 	      DataType* A, DataType* B, DataType* C)
 {
   DataType sab,sa,sb,saa,sbb;
   int nn;
   int i,j,k;
-
+  int count=1;
 
   //sum_i( x[i]-x_mean[i])*(y[i]-y_mean[i]) ) /
   //     [ sqrt( sum_i(x[i]-x_mean[i])^2 ) sqrt(sum_i(y[i]-y_mean[i])^2 ) ]
@@ -302,14 +303,18 @@ int pcc_naive(int m, int n, int p, int count,
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
 //P = [N sum(AB) - (sumA)(sumB)] /
 //    sqrt[ (N sumA^2 - (sum A)^2)[ (N sumB^2 - (sum B)^2) ]
-int pcc_matrix(int m, int n, int p, int count,
-	       DataType* A, DataType* B, bool transposeB, DataType* P)	       
+//int pcc_matrix(int m, int n, int p, int count,
+//	       DataType* A, DataType* B, bool transposeB, DataType* P)	       
+int pcc_matrix(int m, int n, int p,
+	       DataType* A, DataType* B, DataType* P)	       
 {
 #if 1
   int i,j,k;
   int stride = ((n-1)/64 +1);
   DataType alpha=1.0;
   DataType beta=0.0;
+  int count =1;
+  bool transposeB = true;
 
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
@@ -504,7 +509,7 @@ int pcc_matrix(int m, int n, int p, int count,
 
     clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
     accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
-    printf("All(5) SGEMMs (%e)s GFLOPs=%e \n", accumSGEMM, 5*(2/1.0e9)*m*n*p/accumSGEMM);
+    //printf("All(5) SGEMMs (%e)s GFLOPs=%e \n", accumSGEMM, 5*(2/1.0e9)*m*n*p/accumSGEMM);
 
     //DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
     DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
@@ -619,11 +624,12 @@ int main (int argc, char **argv) {
 DEV_CHECKPT
   printf("naive PCC implmentation\n");
   //pcc_naive(m, n, p, count, A, B, C);
-  pcc_naive(m, n, p, count, A, B, R);
+  pcc_naive(m, n, p, A, B, R);
 #else  
 DEV_CHECKPT
   printf("matrix PCC implmentation\n");
-  pcc_matrix(m, n, p, count, A, B, transposeB, R);
+  //pcc_matrix(m, n, p, count, A, B, transposeB, R);
+  pcc_matrix(m, n, p, A, B, R);
 #endif
 DEV_CHECKPT
   clock_gettime(CLOCK_MONOTONIC, &stopPCC);
