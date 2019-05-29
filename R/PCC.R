@@ -2,7 +2,7 @@
 # MPCC call function to R
 #
 
-corMxM <- function(aM, bM) {
+PCC <- function(aM, bM) {
   res <- .C("R_pcc_matrix", aM = as.double(x),
                             bM = as.double(x),
                             n = as.integer(ncol(aM)), # nInd

@@ -1,0 +1,4 @@
+useDynLib(MPCC, .registration=TRUE)
+
+exportPattern("^[^\\.]")
+

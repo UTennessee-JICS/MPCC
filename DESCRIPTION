@@ -1,0 +1,9 @@
+Package: MPCC
+Version: 0.0.0-1
+Date: 2019-06-29
+Title: Optimized Parallelized Matrix Pearsons Correlation Coefficient in R
+Author: Danny Arends <Danny.Arends@gmail.com>
+Maintainer: Danny Arends <Danny.Arends@gmail.com>
+Depends: R (>= 2.10)
+Description: The code presented here is an attempt to provide an algorithm to perform Pearsons Correlation Coefficient calculations at a large scale for data sets arranged as rows or columns in rectangular matrices. This particular algorithm was designed to be performant in the presence of missing data.
+License: GPL-3
