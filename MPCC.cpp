@@ -15,26 +15,29 @@
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
+#include <cmath>
+#include <cfloat>
 #include <mkl.h>
 #include <assert.h>
 #include <iostream>
 #include <fstream>
 
 using namespace std;
-#define BINARY_INPUT 0
 #define BILLION  1000000000L
 
 #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
 #define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
 #define DEV_CHECKPT printf("Checkpoint: %s, line %d\n", __FILE__, __LINE__); fflush(stdout); 
 
-#define MISSING_MARKER FP_NAN
+#define NANF std::nanf("1")
+#define MISSING_MARKER NANF
 
 #define DataType float
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
 };
+
 static DataType TimeSpecToNanoSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec*1000000000.0 + (DataType)ts->tv_nsec;
 };
@@ -44,42 +47,44 @@ int bitsum(unsigned long n){
   int nn=n;
   for (c=0; nn; ++c) { nn&=nn-1;}
   return c;
-}
+};
+
+DataType convert_to_val(string text)
+{
+    DataType val;
+    if(text=="nan"){ val = NANF;}
+    else{ val = atof(text.c_str());}
+    return val;
+};
 
 void initialize(int &m, int &n, int &p, int seed,
-		DataType **A, DataType **B,
+		DataType **A, 
+                DataType **B,
 		DataType **C,
 		char* matA_filename,
  		char* matB_filename,
-		bool &transposeB){
+		bool &transposeB)
+{
   // A is m x n (tall and skinny) row major order
   // B is n x p (short and fat) row major order
   // C, P is m x p (big and square) row major order
 
   //if matA_filename exists, read in dimensions
   // check for input file(s)
+  std::string text;
+  DataType val;
   fstream mat_A_file;
-  float tmp;
-#if BINARY_INPUT //binary file
-  mat_A_file.open(matA_filename,ios::in | ios::binary);
-  if(mat_A_file){
-     // if found then read
-     mat_A_file.read(reinterpret_cast<char*>(&m), sizeof(int));
-     mat_A_file.read(reinterpret_cast<char*>(&n), sizeof(int));
-     mat_A_file.close();
-  }
-#else //text file
+
   mat_A_file.open(matA_filename,ios::in);
-  if(mat_A_file){
+  if(mat_A_file.is_open()){
      // if found then read
-     mat_A_file >> tmp;
-     m=tmp;
-     mat_A_file >> tmp;
-     n=tmp;
+     std::getline(mat_A_file, text);
+     m = convert_to_val(text);
+     std::getline(mat_A_file, text);
+     n = convert_to_val(text);
 printf("m=%d n=%d\n",m,n);
      mat_A_file.close();
   }
-#endif
   //else use default value for m,n
 
   *A = (DataType *)mkl_calloc( m*n,sizeof( DataType ), 64 ); 
@@ -93,26 +98,16 @@ printf("m=%d n=%d\n",m,n);
   // check for input file(s)
   fstream mat_B_file;
   int _n=n;
-#if BINARY_INPUT //binary file
-  mat_B_file.open(matB_filename,ios::in | ios::binary);
-  if(mat_B_file){
-     // if found then read
-     mat_B_file.read(reinterpret_cast<char*>(&_n), sizeof(int));
-     mat_B_file.read(reinterpret_cast<char*>(&p), sizeof(int));
-     mat_B_file.close();
-  }
-#else //text file
   mat_B_file.open(matB_filename,ios::in);
-  if(mat_B_file){
+  if(mat_B_file.is_open()){
      // if found then read
-     mat_B_file >> tmp;
-     _n=tmp;
-     mat_B_file >> tmp;
-     p=tmp;
+     std::getline(mat_B_file, text);
+     _n = convert_to_val(text);
+     std::getline(mat_B_file, text);
+     p = convert_to_val(text);
 printf("_n=%d p=%d\n",_n,p);
      mat_B_file.close();
   }
-#endif
 
   //check to see if we need to transpose B
   transposeB=false;
@@ -147,7 +142,7 @@ printf("_n=%d p=%d\n",_n,p);
   __assume_aligned(A, 64);
   __assume_aligned(B, 64);
   __assume_aligned(C, 64);
-  __assume(m%16==0);
+  //__assume(m%16==0);
  
 
   //setup random numbers to create some synthetic matrices for correlation
@@ -167,25 +162,20 @@ printf("_n=%d p=%d\n",_n,p);
   //These matrices are of type single precision floating point values
   
   // check for input file(s)
-#if BINARY_INPUT //binary
-  mat_A_file.open(matA_filename,ios::in | ios::binary);
-  if(mat_A_file){
-     // if found then read
-     mat_A_file.read(reinterpret_cast<char*>(&m), sizeof(int));
-     mat_A_file.read(reinterpret_cast<char*>(&n), sizeof(int));
-     mat_A_file.read(reinterpret_cast<char*>(*A), sizeof(DataType)*m*n);
-     mat_A_file.close();
-  }
-#else
   mat_A_file.open(matA_filename,ios::in);
-  if(mat_A_file){
+  if(mat_A_file.is_open()){
      // if found then read
-     mat_A_file >> tmp;
-     mat_A_file >> tmp;
-     for(int i=0;i<m*n;++i) mat_A_file >> (*A)[i];
+     std::getline(mat_A_file, text);
+     //m = convert_to_val(text);
+     std::getline(mat_A_file, text);
+     //n = convert_to_val(text);
+     for(int i=0;i<m*n;++i){ 
+        std::getline(mat_A_file, text);
+        (*A)[i] = convert_to_val(text);
+	//if(isnan((*A)[i])){printf("A[%d]==NAN\n",i);} 
+     }
      mat_A_file.close();
   }
-#endif
   else{ //else compute and then write matrix A
     //random assignemnt of threads gives inconsistent values, so keep serial
     int i;
@@ -200,43 +190,28 @@ printf("_n=%d p=%d\n",_n,p);
     (*A)[((m-1)*n-1)]= MISSING_MARKER;
 
     //write matrix to file
-#if BINARY_INPUT //binary   
-    mat_A_file.open(matA_filename,ios::out | ios::binary);
-    mat_A_file.write(reinterpret_cast<char*>(&m), sizeof(int));
-    mat_A_file.write(reinterpret_cast<char*>(&n), sizeof(int));
-    mat_A_file.write(reinterpret_cast<char*>(*A), sizeof(DataType)*m*n);   
-#else
     mat_A_file.open(matA_filename,ios::out);
     mat_A_file << m;
     mat_A_file << n;
     for(int i=0;i<m*n;++i) mat_A_file << (*A)[i] << '\n';
-#endif
     mat_A_file.close();
   }
  
   //ceb Should write  out matrix and read in for future use.
   // check for input file(s)
-#if BINARY_INPUT
-  mat_B_file.open(matB_filename,ios::in | ios::binary);
-  if(mat_B_file){
-     // if found then read
-     mat_B_file.read(reinterpret_cast<char*>(&n), sizeof(int));
-     mat_B_file.read(reinterpret_cast<char*>(&p), sizeof(int));
-     mat_B_file.read(reinterpret_cast<char*>(*B), sizeof(DataType)*n*p);
-     mat_B_file.close();
-  }
-#else
   mat_B_file.open(matB_filename,ios::in);
-  if(mat_B_file){
-     // if found then read
-     mat_B_file >> tmp;
-     mat_B_file >> tmp;
-     for(int i=0; i<n*p; ++i) mat_B_file >> (*B)[i];
+  if(mat_B_file.is_open()){
+     std::getline(mat_B_file, text);
+     //m = convert_to_val(text);
+     std::getline(mat_B_file, text);
+     //n = convert_to_val(text);
+     for(int i=0;i<n*p;++i){
+        std::getline(mat_B_file, text);
+        (*B)[i] = convert_to_val(text);
+        //if(isnan((*B)[i]) ){printf("B[%d]==NAN\n",i);}
+     }
      mat_B_file.close();
-
-
   }
-#endif
   else{ //else compute and then write matrix B
     int i;
     //random assignemnt of threads gives inconsistent values, so keep serial
@@ -251,17 +226,10 @@ printf("_n=%d p=%d\n",_n,p);
     (*B)[((n-1)*p-1)]= MISSING_MARKER;
    
     //write matrix to file
-#if BINARY_INPUT
-    mat_B_file.open(matB_filename,ios::out | ios::binary);
-    mat_B_file.write(reinterpret_cast<char*>(&n), sizeof(int));
-    mat_B_file.write(reinterpret_cast<char*>(&p), sizeof(int));
-    mat_B_file.write(reinterpret_cast<char*>(*B), sizeof(DataType)*n*p);   
-#else
     mat_B_file.open(matB_filename,ios::out);
     mat_B_file << n;
     mat_B_file << p;
     for(int i=0; i<n*p; ++i) mat_B_file << (*B)[i];
-#endif
     mat_B_file.close();
   }
 #if 0
@@ -269,7 +237,7 @@ printf("_n=%d p=%d\n",_n,p);
   for (int i=0; i<n; i++) { for(int j=0;j<p;++j){printf("B[%d,%d]=%e\n",i,j,(*B)[i*p+j]);}}
 #endif
   return;
-}
+};
 
 
 //This function is an implementation of a pairwise vector * vector correlation.
@@ -283,6 +251,8 @@ int pcc_naive(int m, int n, int p, int count,
   int nn;
   int i,j,k;
 
+
+#if 0 //unstable formulation (possible divide by zero)
   for (int ii=0; ii<count; ii++) {
     #pragma omp parallel for private (i,j,k)
     for (i=0; i<m; i++) {  
@@ -296,25 +266,68 @@ int pcc_naive(int m, int n, int p, int count,
 	nn=n;
 	
 	for (k=0; k<n; k++) {
-	  //compute components of PCC function
-	  if ((A[i*n+k] != MISSING_MARKER) && (B[k*p+j] != MISSING_MARKER)){   
+	  //if missing data exists decrement divisor for mean calculation
+	  if (isnan(A[i*n+k]) || isnan(B[j*n+k])){  
+            nn--;
+          } 
+          else{
+	    //compute components of PCC function
 	    sa  += A[i*n+k];
-	    sb  += B[k*p+j];  
-	    sab += A[i*n+k] * B[k*p+j];
+	    sb  += B[j*n+k];  
+	    sab += A[i*n+k] * B[j*n+k];
 	    saa += A[i*n+k] * A[i*n+k];
-	    sbb += B[k*p+j] * B[k*p+j];
+	    sbb += B[j*n+k] * B[j*n+k];
 	  }  
-	  else //decrement divisor for mean calculation
-          { nn--; }	  
 	}
 	
 	if(nn>1){//Note edge case: if nn==1 then denominator is Zero! (saa==sa*sa, sbb==sb*sb)
 	  C[i*p+j] = (nn*sab - sa*sb) / sqrt( (nn*saa - sa*sa)*(nn*sbb - sb*sb) );
+          if( sqrt( (nn*saa - sa*sa)*(nn*sbb - sb*sb) ) ==0.0){printf("Error: R[%d,%d] denominator is zero! sa[%d]=%e sb[%d]=%e \n",i,j,i,sa,j,sb);}
 	}
-	else{printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j); C[i*p+j]=1./0.;}
+	else{/*printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j);*/ C[i*p+j]=0.;}
       }
     }
   }
+#else
+  //sum_i( x[i]-x_mean[i])*(y[i]-y_mean[i]) ) /
+  //     [ sqrt( sum_i(x[i]-x_mean[i])^2 ) sqrt(sum_i(y[i]-y_mean[i])^2 ) ]
+  for (int ii=0; ii<count; ii++) {
+    #pragma omp parallel for private (i,j,k)
+    for (i=0; i<m; i++) {
+      for (j=0; j<p; j++) {
+
+        sa=0.0;
+        sb=0.0;
+        saa=0.0;
+        sbb=0.0;
+        sab=0.0;
+        nn=n;
+
+        for (k=0; k<n; k++) {
+          //if missing data exists decrement divisor for mean calculation
+          if (isnan(A[i*n+k]) || isnan(B[j*n+k])){
+             nn--;
+          }
+          else{
+             //compute components of PCC function
+             sa  += A[i*n+k];
+             sb  += B[j*n+k];
+             sab += A[i*n+k] * B[j*n+k];
+             saa += A[i*n+k] * A[i*n+k];
+             sbb += B[j*n+k] * B[j*n+k];
+          }
+        }
+          
+        if(nn>1){//Note edge case: if nn==1 then denominator is Zero! (saa==sa*sa, sbb==sb*sb)
+          //C[i*p+j] = (nn*sab - sa*sb) / sqrt( (nn*saa - sa*sa)*(nn*sbb - sb*sb) );
+          C[i*p+j] = (sab - sa*sb/nn) / sqrt( (saa - sa*sa/nn)*(sbb - sb*sb/nn) );
+          if( sqrt( (saa - sa*sa/nn)*(sbb - sb*sb/nn) ) ==0.0){printf("Error: R[%d,%d] denominator is zero! sa[%d]=%e sb[%d]=%e \n",i,j,i,sa,j,sb);}
+        }
+        else{/*printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j);*/ C[i*p+j]=0.;}
+      }
+    }
+  }
+#endif
   return 0;
 }
 
@@ -397,7 +410,7 @@ int pcc_matrix(int m, int n, int p, int count,
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {	
-	if (A[i*n+k]==MISSING_MARKER) {
+	if (isnan(A[i*n+k])) {
 	  amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
 	}
       }
@@ -409,7 +422,7 @@ int pcc_matrix(int m, int n, int p, int count,
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
-	if (B[j*n+k]==MISSING_MARKER) {
+	if (isnan(B[j*n+k])) {
 	  bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
 	}
       }
@@ -434,7 +447,9 @@ int pcc_matrix(int m, int n, int p, int count,
     unsigned long ul_n = n;
     #pragma omp parallel for private(i)
     for(i=0; i<m*p; i++){
-      N[i] = ul_n-M[i];
+      //N[i] = ul_n-M[i];
+      N[i] = 1./(ul_n-M[i]);
+      if(isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
     }
 
     //Zero out values that are marked as missing.
@@ -443,7 +458,7 @@ int pcc_matrix(int m, int n, int p, int count,
     // the sums
     #pragma omp parallel for private(i)
     for (i=0; i<m*n; i++) {
-      if (A[i] == MISSING_MARKER) { A[i]=0.0; }
+      if (isnan(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
     vsSqr(m*n,A,AA);
@@ -454,7 +469,7 @@ int pcc_matrix(int m, int n, int p, int count,
     // the sums
     #pragma omp parallel for private(j)
     for (j=0; j<n*p; j++) {
-      if (B[j] == MISSING_MARKER) { B[j]=0.0; }
+      if (isnan(B[j])) { B[j]=0.0; }
       else{ UnitB[j]=1; }
     }
     vsSqr(n*p,B,BB);
@@ -479,13 +494,13 @@ int pcc_matrix(int m, int n, int p, int count,
     }
 
     clock_gettime(CLOCK_MONOTONIC, &startSGEMM);
-
+    
+    //SA = A*UnitB
+    //Compute sum of A for each AB row col pair.
+    // This requires multiplication with a UnitB matrix which acts as a mask 
+    // to prevent missing data in AB pairs from contributing to the sum
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
-
-    //clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
-    //accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
-    //printf("SGEMM A*UB GFLOPs=%e \n", (2/1.0e9)*m*n*p/accumSGEMM );
 
     //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
@@ -495,9 +510,6 @@ int pcc_matrix(int m, int n, int p, int count,
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
-    //clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
-    //accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
-    //printf("SGEMM UA*B GFLOPs=%e \n", (2/1.0e9)*m*n*p/accumSGEMM );
 
     //SAA = AA*UnitB
     //Compute sum of AA for each AB row col pair.
@@ -508,10 +520,6 @@ int pcc_matrix(int m, int n, int p, int count,
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
-    //clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
-    //accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
-    //printf("SGEMM AA*UB GFLOPs=%e \n", (2/1.0e9)*m*n*p/accumSGEMM );
-
     //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
@@ -520,10 +528,6 @@ int pcc_matrix(int m, int n, int p, int count,
 
     cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
-
-    //clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
-    //accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
-    //printf("SGEMM UA*BB GFLOPs=%e \n", (2/1.0e9)*m*n*p/accumSGEMM );
 
     mkl_free(UnitA);
     mkl_free(UnitB);
@@ -541,17 +545,20 @@ int pcc_matrix(int m, int n, int p, int count,
     //printf("SGEMM A*B GFLOPs=%e \n", (2/1.0e9)*m*n*p/accumSGEMM );
 
     clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
-    accumSGEMM =  (TimeSpecToNanoSeconds(&stopSGEMM)- TimeSpecToNanoSeconds(&startSGEMM));
+    accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
     printf("All(5) SGEMMs (%e)s GFLOPs=%e \n", accumSGEMM, 5*(2/1.0e9)*m*n*p/accumSGEMM);
 
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
+    //DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
     DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
+    DataType* NSASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+   
+    //DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
+    DataType* NSASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
     
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
+    //DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
+    DataType* NSBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
     
     DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
@@ -559,43 +566,71 @@ int pcc_matrix(int m, int n, int p, int count,
     //Compute and assemble composite terms
 
     //NSAB=N*SAB
-    vsMul(m*p,N,SAB,NSAB);
+    //vsMul(m*p,N,SAB,NSAB);
 
     //SASB=SA*SB
     vsMul(m*p,SA,SB,SASB);
-
+    //NSASB
+    vsMul(m*p,N,SASB,NSASB); //ceb
+    
     //NSAB=(-1)SASB+NSAB
-    cblas_saxpy(m*p,(DataType)(-1), SASB,1, NSAB,1);
+    //cblas_saxpy(m*p,(DataType)(-1), SASB,1, NSAB,1);
+
+    //SAB=(-1)NSASB+SAB  (numerator)
+    cblas_saxpy(m*p,(DataType)(-1), NSASB,1, SAB,1); //ceb
+
+
     //element by element multiplication of vector X by Y, return in Z
-    vsMul(m*p,N,SAA,NSAA);
+    //vsMul(m*p,N,SAA,NSAA);
+
     //element by element multiplication of vector X by Y, return in Z
     vsSqr(m*p,SA,SASA);
-
+    vsMul(m*p,N,SASA,NSASA); //ceb
     //NSAA=(-1)SASA+NSAA
-    cblas_saxpy(m*n,(DataType)(-1), SASA,1, NSAA,1);
+    //cblas_saxpy(m*n,(DataType)(-1), SASA,1, NSAA,1);
+    //NSAA=(-1)NSASA+SAA (denominator term 1)
+    cblas_saxpy(m*p,(DataType)(-1), NSASA,1, SAA,1);
+
     //element by element multiplication of vector X by Y, return in Z
-    vsMul(m*p,N,SBB,NSBB);    
+    //vsMul(m*p,N,SBB,NSBB);    
+
     //element by element multiplication of vector X by Y, return in Z
-    //vsMul(m*p,SB,SB,SBSB);
+    //vs(m*p,SB,SB,SBSB);
     vsSqr(m*p,SB,SBSB);
-
+    vsMul(m*p,N,SBSB,NSBSB);
     //NSBB=(-1)SBSB+NSBB
-    cblas_saxpy(m*p,(DataType)(-1), SBSB,1, NSBB,1);
+    //cblas_saxpy(m*p,(DataType)(-1), SBSB,1, NSBB,1);
+    //NSBB=(-1)NSBSB+SBB
+    cblas_saxpy(m*p,(DataType)(-1), NSBSB,1, SBB,1);
 
+#if 0
+    for(int i=0;i<m*p;++i){
+       if(SAA[i]==0.){printf("SAA[%d]=%e\n",i,SAA[i]);SAA[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
+       if(SBB[i]==0.){printf("SBB[%d]=%e\n",i,SBB[i]);SBB[i]=1;}
+    }
+#endif
     //element by element multiplication of vector X by Y, return in Z
-    vsMul(m*p,NSAA,NSBB,DENOM);
-
+    //vsMul(m*p,NSAA,NSBB,DENOM);
+    vsMul(m*p,SAA,SBB,DENOM);
+    for(int i=0;i<m*p;++i){
+       if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
+    }
     //element by element sqrt of vector DENOM
     vsSqrt(m*p,DENOM,DENOMSqrt);
     //element by element division of vector X by Y, return in Z
-    vsDiv(m*p,NSAB,DENOMSqrt,P);   
+    //vsDiv(m*p,NSAB,DENOMSqrt,P);   
+    vsDiv(m*p,SAB,DENOMSqrt,P);   
+    //vsMul(m*p,SAB,DENOMSqrt,P);   
 
     mkl_free(SASA);
     mkl_free(SASB);
     mkl_free(SBSB);
-    mkl_free(NSAB);
-    mkl_free(NSAA);
-    mkl_free(NSBB);
+    //mkl_free(NSAB);
+    //mkl_free(NSAA);
+    //mkl_free(NSBB);
+    mkl_free(NSASB);
+    mkl_free(NSASA);
+    mkl_free(NSBSB);
     mkl_free(DENOM);
     mkl_free(DENOMSqrt); 
   }
@@ -621,9 +656,9 @@ int main (int argc, char **argv) {
   //40960 = 2560*16 too large (for skylake)
 
   //set default values 
-  int m=100;//16*1500;//24000^3 for peak performance on skylake
-  int n=50;
-  int p=75;
+  int m=64;//16*1500;//24000^3 for peak performance on skylake
+  int n=16;
+  int p=32;
   int count=1;
   int seed =1; 
   char* matA_filename="matA.dat";
@@ -639,28 +674,91 @@ int main (int argc, char **argv) {
   DataType* A;
   DataType* B; 
   DataType* R;
+  DataType* diff;
+  DataType* C;
   DataType accumR;
   
   bool transposeB=false;
   initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
-#if 0
   clock_gettime(CLOCK_MONOTONIC, &startPCC);
-  pcc_naive(m, n, p, count, A, B, R);
-  clock_gettime(CLOCK_MONOTONIC, &stopPCC);
-  accumR =  (TimeSpecToSeconds(&stopPCC)- TimeSpecToSeconds(&startPCC));
-#else  
-  clock_gettime(CLOCK_MONOTONIC, &startPCC);
+//#if 1
+  C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+  //pcc_naive(m, n, p, count, A, B, R);
+  pcc_naive(m, n, p, count, A, B, C);
+//#else  
   pcc_matrix(m, n, p, count, A, B, transposeB, R);
+//#endif
   clock_gettime(CLOCK_MONOTONIC, &stopPCC);
   accumR =  (TimeSpecToSeconds(&stopPCC)- TimeSpecToSeconds(&startPCC));
+
+#if 1
+
+#if 0
+  //read in results file for comparison
+  fstream test_file;
+  test_file.open("results_6k_x_29k_values.txt",ios::in);
+  if(test_file.is_open()){
+     float tmp;
+     // if found then read
+     int dim1,dim2;
+     test_file >> tmp; 
+     dim1 = tmp;
+     test_file >> tmp;
+     dim2 = tmp;
+     printf("dim1=%d dim2=%d dim1*dim2=%d\n",dim1,dim2,dim1*dim2);
+     //C = (DataType *)mkl_calloc( dim1*dim2,sizeof( DataType ), 64 );
+     for(int i=0;i<dim1*dim2;++i) test_file >> C[i];
+     test_file.close();
+  }
+#endif 
+
+#if 0
+    //write C matrix to file
+    fstream mat_R_file;
+    mat_R_file.open("MPCC_computed.txt",ios::out);
+    mat_R_file << m << '\n';
+    mat_R_file << p << '\n';
+    for(int i=0;i<m*p;++i) mat_R_file << R[i] << '\n';
+    mat_R_file.close();
+#endif
+ 
+  DataType R_2norm = 0.0;
+  DataType C_2norm = 0.0;
+  DataType diff_2norm = 0.0;
+  for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
+  C_2norm=sqrt(C_2norm);
+  for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
+  R_2norm=sqrt(R_2norm);
+  diff = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+  for (int i=0; i<m*p; i++) { 
+     diff[i]=pow(C[i]-R[i],2);
+     diff_2norm += diff[i]; 
+#if 0
+    //write C matrix to file
+    fstream mat_R_file;
+    mat_R_file.open("MPCC_computed.txt",ios::out);
+    mat_R_file << m << '\n';
+    mat_R_file << p << '\n';
+    for(int i=0;i<m*p;++i) mat_R_file << R[i] << '\n';
+    mat_R_file.close();
+#endif
+  }
+  diff_2norm = sqrt(diff_2norm);
+  DataType relativeNorm = diff_2norm/R_2norm;
 #endif
 
-  DataType R_2norm=0.0;
-#if 0
-  for (int i=0; i<n*p; i++) { R_2norm+=R[i]*R[i]; }
-  R_2norm=sqrt(R_2norm);
+#if 1
+    //write C matrix to file
+    fstream diff_file;
+    diff_file.open("MPCC_diff.txt",ios::out);
+    diff_file << m << '\n';
+    diff_file << p << '\n';
+    for(int i=0;i<m*p;++i) if(diff[i]>0.1) {diff_file << i << " "<< diff[i] << '\n';}
+    diff_file.close();
 #endif
-  printf("Matrix 2Norm = %lf in %e s m=%d n=%d p=%d GFLOPs=%e \n",R_2norm, accumR, m,n,p, (5*2/1.0e9)*m*m*m/accumR);
+
+  printf("R_2Norm=%e, C_2Norm=%e, diff_2norm=%e relativeNorm=%e\n", R_2norm, C_2norm, diff_2norm, relativeNorm);
+  printf("relative diff_2Norm = %e in %e s m=%d n=%d p=%d GFLOPs=%e \n", relativeNorm, accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
 
   return 0;
 }
