@@ -33,8 +33,31 @@ using namespace std;
 #define NANF std::nan("1")
 #define MISSING_MARKER NANF
 
-#define DataType float
-//#define DataType double
+#ifndef NAIVE //default use matrix version
+  #define NAIVE 0
+#endif
+
+#ifndef DOUBLE //default to float type
+  #define DOUBLE 0
+#endif
+
+#if DOUBLE
+  #define DataType double
+  #define VSQR vdSqr
+  #define VMUL vdMul
+  #define VSQRT vdSqrt
+  #define VDIV vdDiv
+  #define GEMM cblas_dgemm
+  #define AXPY cblas_daxpy
+#else
+  #define DataType float
+  #define VSQR vsSqr
+  #define VMUL vsMul
+  #define VSQRT vsSqrt
+  #define VDIV  vsDiv
+  #define GEMM cblas_sgemm
+  #define AXPY cblas_saxpy
+#endif
 
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
@@ -118,7 +141,7 @@ printf("_n=%d p=%d\n",_n,p);
      p=_n;
      _n=n; 
      transposeB=true; 
-     printf("Transposing B for computational efficiency in SGEMMs\n");
+     printf("Transposing B for computational efficiency in GEMMs\n");
      printf("transposed _n=%d p=%d\n",_n,p);
    }
 
@@ -379,7 +402,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {	
-	if (isnan(A[i*n+k])) {
+	if (std::isnan(A[i*n+k])) {
 	  amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
 	}
       }
@@ -391,7 +414,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
-	if (isnan(B[j*n+k])) {
+	if (std::isnan(B[j*n+k])) {
 	  bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
 	}
       }
@@ -417,7 +440,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private(i)
     for(i=0; i<m*p; i++){
       N[i] = 1./(ul_n-M[i]);
-      if(isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
+      if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
     }
     mkl_free(M);
 
@@ -427,10 +450,11 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(i)
     for (i=0; i<m*n; i++) {
-      if (isnan(A[i])) { A[i]=0.0; }
+      if (std::isnan(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
-    vsSqr(m*n,A,AA);
+    //vsSqr(m*n,A,AA);
+    VSQR(m*n,A,AA);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
@@ -438,14 +462,15 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(j)
     for (j=0; j<n*p; j++) {
-      if (isnan(B[j])) { B[j]=0.0; }
+      if (std::isnan(B[j])) { B[j]=0.0; }
       else{ UnitB[j]=1; }
     }
-    vsSqr(n*p,B,BB);
+    //vsSqr(n*p,B,BB);
+    VSQR(n*p,B,BB);
 
     //variables used for performance timing
-    struct timespec startSGEMM, stopSGEMM;
-    double accumSGEMM;
+    struct timespec startGEMM, stopGEMM;
+    double accumGEMM;
 
     //Compute PCC terms and assemble
      
@@ -457,20 +482,22 @@ int pcc_matrix(int m, int n, int p,
       ldb=n;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &startSGEMM);
+    clock_gettime(CLOCK_MONOTONIC, &startGEMM);
     
     //SA = A*UnitB
     //Compute sum of A for each AB row col pair.
     // This requires multiplication with a UnitB matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    GEMM(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
     //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    GEMM(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
 
@@ -478,14 +505,16 @@ int pcc_matrix(int m, int n, int p,
     //Compute sum of AA for each AB row col pair.
     // This requires multiplication with a UnitB matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    GEMM(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
     //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    GEMM(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
     mkl_free(UnitA);
@@ -494,12 +523,13 @@ int pcc_matrix(int m, int n, int p,
     mkl_free(BB);
 
     //SAB = A*B
-    cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
+    GEMM(CblasRowMajor, CblasNoTrans, transB,
 		m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
 
-    clock_gettime(CLOCK_MONOTONIC, &stopSGEMM);
-    accumSGEMM =  (TimeSpecToSeconds(&stopSGEMM)- TimeSpecToSeconds(&startSGEMM));
-    //printf("All(5) SGEMMs (%e)s GFLOPs=%e \n", accumSGEMM, 5*(2/1.0e9)*m*n*p/accumSGEMM);
+    clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
+    accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
+    //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
 
     DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
     DataType* NSASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
@@ -516,36 +546,48 @@ int pcc_matrix(int m, int n, int p,
     //Compute and assemble composite terms
 
     //SASB=SA*SB
-    vsMul(m*p,SA,SB,SASB);
+    //vsMul(m*p,SA,SB,SASB);
+    VMUL(m*p,SA,SB,SASB);
     //N*SASB
-    vsMul(m*p,N,SASB,NSASB); //ceb
+    //vsMul(m*p,N,SASB,NSASB); //ceb
+    VMUL(m*p,N,SASB,NSASB); //ceb
 
     //SAB=(-1)NSASB+SAB  (numerator)
-    cblas_saxpy(m*p,(DataType)(-1), NSASB,1, SAB,1); //ceb
+    //cblas_saxpy(m*p,(DataType)(-1), NSASB,1, SAB,1); //ceb
+    AXPY(m*p,(DataType)(-1), NSASB,1, SAB,1); //ceb
 
     //(SA)^2
-    vsSqr(m*p,SA,SASA);
+    //vsSqr(m*p,SA,SASA);
+    VSQR(m*p,SA,SASA);
     //N(SA)^2
-    vsMul(m*p,N,SASA,NSASA); //ceb
+    //vsMul(m*p,N,SASA,NSASA); //ceb
+    VMUL(m*p,N,SASA,NSASA); //ceb
     //SAA=SAA-NSASA (denominator term 1)
-    cblas_saxpy(m*p,(DataType)(-1), NSASA,1, SAA,1);
+    //cblas_saxpy(m*p,(DataType)(-1), NSASA,1, SAA,1);
+    AXPY(m*p,(DataType)(-1), NSASA,1, SAA,1);
 
     //(SB)^2
-    vsSqr(m*p,SB,SBSB);
+    //vsSqr(m*p,SB,SBSB);
+    VSQR(m*p,SB,SBSB);
     //N(SB)^2
-    vsMul(m*p,N,SBSB,NSBSB);
+    //vsMul(m*p,N,SBSB,NSBSB);
+    VMUL(m*p,N,SBSB,NSBSB);
     //SBB=SBB-NSBSB
-    cblas_saxpy(m*p,(DataType)(-1), NSBSB,1, SBB,1);
+    //cblas_saxpy(m*p,(DataType)(-1), NSBSB,1, SBB,1);
+    AXPY(m*p,(DataType)(-1), NSBSB,1, SBB,1);
 
     //DENOM=SAA*SBB (element wise multiplication)
-    vsMul(m*p,SAA,SBB,DENOM);
+    //vsMul(m*p,SAA,SBB,DENOM);
+    VMUL(m*p,SAA,SBB,DENOM);
     for(int i=0;i<m*p;++i){
        if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
     }
     //sqrt(DENOM)
-    vsSqrt(m*p,DENOM,DENOMSqrt);
+    //vsSqrt(m*p,DENOM,DENOMSqrt);
+    VSQRT(m*p,DENOM,DENOMSqrt);
     //P=SAB/DENOMSqrt (element wise division)
-    vsDiv(m*p,SAB,DENOMSqrt,P);   
+    //vsDiv(m*p,SAB,DENOMSqrt,P);   
+    VDIV(m*p,SAB,DENOMSqrt,P);   
 
     mkl_free(SASA);
     mkl_free(SASB);
@@ -601,7 +643,7 @@ int main (int argc, char **argv) {
   initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
   //C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
   clock_gettime(CLOCK_MONOTONIC, &startPCC);
-#if 0
+#if NAIVE
   printf("naive PCC implmentation\n");
   //pcc_naive(m, n, p, count, A, B, C);
   pcc_naive(m, n, p, A, B, R);

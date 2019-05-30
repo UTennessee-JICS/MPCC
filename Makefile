@@ -7,7 +7,7 @@ CXX		= icc
 CXXFLAGS	= -std=c++11 -Wall -g -O3 -qopenmp -pthread -m64 -qopt-assume-safe-padding -xAVX -axCore-AVX512 -qopt-zmm-usage=high -qopt-report=5 -I${MKLROOT}/include
 
 #CXXFLAGS	 ?= -std=c++11 -Wall -g -O3 -qopenmp -qopt-assume-safe-padding -qopt-report=5 -xAVX
-
+CXXFLAGS+=$(BUILD)
 
 SRCDIRS = ./src/
 SRCFILES = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/MPCC.cpp))
@@ -33,5 +33,5 @@ MPCC: $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -f ./*.o *~ 
+	rm -f ./*.o *~ ./src/*.o 
 
