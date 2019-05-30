@@ -5,7 +5,7 @@
 #include <R_ext/Rdynload.h>
 #include "R_init.h"
 
-void R_init_ctl(DllInfo* info) {
+void R_init_mpcc(DllInfo* info) {
     R_registerRoutines(info, NULL, NULL, NULL, NULL);
     R_useDynamicSymbols(info, TRUE);
 }
