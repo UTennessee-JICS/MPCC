@@ -10,17 +10,7 @@
 //This code computes correlation coefficient between all row/column pairs of two matrices 
 // ./MPCC MatA_filename MatB_filename 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <time.h>
-#include <math.h>
-#include <cmath>
-#include <cfloat>
-#include <mkl.h>
-#include <assert.h>
-#include <iostream>
-#include <fstream>
+#include "MPCC.h"
 
 using namespace std;
 #define BILLION  1000000000L
@@ -40,25 +30,6 @@ using namespace std;
 #ifndef DOUBLE //default to float type
   #define DOUBLE 0
 #endif
-
-#if DOUBLE
-  #define DataType double
-  #define VSQR vdSqr
-  #define VMUL vdMul
-  #define VSQRT vdSqrt
-  #define VDIV vdDiv
-  #define GEMM cblas_dgemm
-  #define AXPY cblas_daxpy
-#else
-  #define DataType float
-  #define VSQR vsSqr
-  #define VMUL vsMul
-  #define VSQRT vsSqrt
-  #define VDIV  vsDiv
-  #define GEMM cblas_sgemm
-  #define AXPY cblas_saxpy
-#endif
-
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
@@ -82,6 +53,8 @@ DataType convert_to_val(string text)
     else{ val = atof(text.c_str());}
     return val;
 };
+
+#ifndef USING_R
 
 void initialize(int &m, int &n, int &p, int seed,
 		DataType **A, 
@@ -265,6 +238,7 @@ printf("_n=%d p=%d\n",_n,p);
   return;
 };
 
+#endif
 
 //This function is an implementation of a pairwise vector * vector correlation.
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
@@ -335,7 +309,7 @@ int pcc_matrix(int m, int n, int p,
   DataType beta=0.0;
   int count =1;
   bool transposeB = true; //assume this is always true. 
-
+  info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
@@ -364,6 +338,8 @@ int pcc_matrix(int m, int n, int p,
   unsigned long *bmask=(unsigned long*)mkl_calloc( p*stride, sizeof(unsigned long), 64);
   __assume_aligned(bmask, 64);
 
+  info("after calloc\n",1);
+
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
   if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
@@ -383,6 +359,8 @@ int pcc_matrix(int m, int n, int p,
     mkl_free(bmask);
     exit (0);
   } 
+
+  info("before deal missing data\n",1);
 
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
@@ -442,7 +420,9 @@ int pcc_matrix(int m, int n, int p,
       N[i] = 1./(ul_n-M[i]);
       if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
     }
+    info("Call mkl_free\n",1);
     mkl_free(M);
+    info("After Call mkl_free\n",1);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
@@ -453,8 +433,11 @@ int pcc_matrix(int m, int n, int p,
       if (std::isnan(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
+    info("VSQR\n",1);
     //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
+
+    info("before zero out\n",1);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
@@ -471,6 +454,8 @@ int pcc_matrix(int m, int n, int p,
     //variables used for performance timing
     struct timespec startGEMM, stopGEMM;
     double accumGEMM;
+
+    info("before PCC terms\n",1);
 
     //Compute PCC terms and assemble
      
@@ -609,6 +594,7 @@ int pcc_matrix(int m, int n, int p,
   return 0;
 };
 
+#ifndef USING_R
 
 int main (int argc, char **argv) {
   //ceb testing with various square matrix sizes
@@ -622,8 +608,8 @@ int main (int argc, char **argv) {
   int p=32;
   int count=1;
   int seed =1; 
-  char* matA_filename="matA.dat";
-  char* matB_filename="matB.dat";
+  char* matA_filename;//="matA.dat";
+  char* matB_filename;//="matB.dat";
  
   if(argc>1){ matA_filename = argv[1]; }
   if(argc>2){ matB_filename = argv[2]; }
@@ -721,11 +707,10 @@ int main (int argc, char **argv) {
     diff_file.close();
 #endif
 
-
-
-
   printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
 
   return 0;
 }
+
+#endif
 
