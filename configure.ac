@@ -6,12 +6,12 @@ AC_ARG_WITH([mpcc-include],
             AC_HELP_STRING([--with-mpcc-include=INCLUDE_PATH],
                            [the location of MKL header files]),
             [mpcc_include_path=$withval])
-MPCC_CPPFLAGS="-std=c++11 -I."
+MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I."
 if test [ -n "$mpcc_include_path" ] ; then
-   MPCC_CPPFLAGS="-std=c++11 -I. -I${mpcc_include_path}"
+   MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I. -I${mpcc_include_path}"
 else
   if test [ -n "${ODBC_INCLUDE}" ] ; then
-     MPCC_CPPFLAGS="-std=c++11 -I. -I${MPCC_INCLUDE}"
+     MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I. -I${MPCC_INCLUDE}"
   fi
 fi
 
@@ -21,10 +21,10 @@ AC_ARG_WITH([mpcc-lib],
                            [the location of MKL libraries]),
             [mpcc_lib_path=$withval])
 if test [ -n "$mpcc_lib_path" ] ; then
-   LIBS="-L$mpcc_lib_path -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl ${LIBS}"
+   LIBS="-L$mpcc_lib_path  -Wl,--start-group $mpcc_lib_path/lib/intel64/libmkl_intel_ilp64.a $mpcc_lib_path/lib/intel64/libmkl_intel_thread.a $mpcc_lib_path/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl ${LIBS}"
 else
   if test [ -n "${MPCC_LIBS}" ] ; then
-     LIBS="-L${MPCC_LIBS} -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl ${LIBS}"
+     LIBS="-L${MPCC_LIBS} -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl ${LIBS}"
   fi
 fi
 
