@@ -309,7 +309,7 @@ int pcc_matrix(int m, int n, int p,
   DataType beta=0.0;
   int count =1;
   bool transposeB = true; //assume this is always true. 
-  info("before calloc\n",1);
+  //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
@@ -338,7 +338,7 @@ int pcc_matrix(int m, int n, int p,
   unsigned long *bmask=(unsigned long*)mkl_calloc( p*stride, sizeof(unsigned long), 64);
   __assume_aligned(bmask, 64);
 
-  info("after calloc\n",1);
+  //info("after calloc\n",1);
 
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
   if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
@@ -360,7 +360,7 @@ int pcc_matrix(int m, int n, int p,
     exit (0);
   } 
 
-  info("before deal missing data\n",1);
+  //info("before deal missing data\n",1);
 
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
@@ -420,9 +420,9 @@ int pcc_matrix(int m, int n, int p,
       N[i] = 1./(ul_n-M[i]);
       if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
     }
-    info("Call mkl_free\n",1);
+    //info("Call mkl_free\n",1);
     mkl_free(M);
-    info("After Call mkl_free\n",1);
+    //info("After Call mkl_free\n",1);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
@@ -433,11 +433,11 @@ int pcc_matrix(int m, int n, int p,
       if (std::isnan(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
-    info("VSQR\n",1);
+    //info("VSQR\n",1);
     //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
 
-    info("before zero out\n",1);
+    //info("before zero out\n",1);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
@@ -455,7 +455,7 @@ int pcc_matrix(int m, int n, int p,
     struct timespec startGEMM, stopGEMM;
     double accumGEMM;
 
-    info("before PCC terms\n",1);
+    //info("before PCC terms\n",1);
 
     //Compute PCC terms and assemble
      
