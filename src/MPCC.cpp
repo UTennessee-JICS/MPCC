@@ -4,8 +4,8 @@
 
 // Matrix reformulation and algebraic simplification for improved algorithmic efficiency
 // where A is matrix of X vectors and B is transposed matrix of Y vectors:
-// R = [N sum(AB) - (sumA)(sumB)] /
-//     sqrt[ (N sumA^2 - (sum A)^2)[ (N sumB^2 - (sum B)^2) ]
+// R = [sum(AB) - (sumA)(sumB)/N] /
+//     sqrt[ (sumA^2 -(1/N) (sum A)^2)[ (sumB^2 -(1/N) (sum B)^2) ]
 
 //This code computes correlation coefficient between all row/column pairs of two matrices 
 // ./MPCC MatA_filename MatB_filename 
@@ -15,8 +15,6 @@
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
-#include <cmath>
-#include <cfloat>
 #include <mkl.h>
 #include <assert.h>
 #include <iostream>
@@ -25,12 +23,19 @@
 using namespace std;
 #define BILLION  1000000000L
 
+#ifndef STANDALONE
+  #define STANDALONE 0
+#endif
+
+#if STANDALONE
+//redefine print statements in case of R usage
+#endif
+
 #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
 #define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
 #define DEV_CHECKPT printf("Checkpoint: %s, line %d\n", __FILE__, __LINE__); fflush(stdout); 
 
-//#define NANF std::nanf("1")
-#define NANF std::nan("1")
+#define NANF nan("1")
 #define MISSING_MARKER NANF
 
 #ifndef NAIVE //default use matrix version
@@ -75,12 +80,63 @@ int bitsum(unsigned long n){
   return c;
 };
 
-DataType convert_to_val(string text)
+DataType convert_to_val(std::string text)
 {
     DataType val;
     if(text=="nan" || text=="NaN" || text=="NAN"){ val = NANF;}
     else{ val = atof(text.c_str());}
     return val;
+};
+
+
+int read_matrix_file(char* filename, DataType** Mat, int &dim1, int &dim2)
+{
+   //expected input is text in form of:
+   //dim1
+   //dim2
+   //val(1)
+   //...
+   //val(dim1*dim2)
+   std::string text;
+   // check for input file(s)
+   fstream in_file;
+   in_file.open(filename,ios::in);
+   if(in_file.is_open()){
+      // if found then read
+      std::getline(in_file, text);
+      //printf("line 1=%s\n",text);
+      dim1 = convert_to_val(text);
+      std::getline(in_file, text);
+      dim2 = convert_to_val(text);
+      //printf("dim1=%d dim2=%d\n",dim1,dim2);
+      //allocate Mat
+      *Mat = (DataType *)mkl_calloc( dim1*dim2,sizeof( DataType ), 64 );
+      if (*Mat == NULL ) {
+         printf("\n ERROR: Can't allocate memory for Matrix %s. Aborting... \n\n",filename);
+         mkl_free(*Mat);
+         exit (0);
+      }
+      __assume_aligned(Mat, 64);
+      for(int i=0;i<dim1*dim2;++i){
+         std::getline(in_file, text);
+         (*Mat)[i] = convert_to_val(text);
+      } 
+      in_file.close();
+   }
+   else {return 0;}
+   return 1;//successfull
+};
+
+int print_matrix(char* filename, DataType* Mat, int m, int n)
+{
+    //Write matrix to file
+    fstream out_file;
+    out_file.open(filename,ios::out);
+    out_file << m << '\n';
+    out_file << n << '\n';
+    for(int i=0;i<m*n;++i) out_file << Mat[i] << '\n';
+    out_file.close();
+    return 0;
 };
 
 void initialize(int &m, int &n, int &p, int seed,
@@ -113,12 +169,6 @@ printf("m=%d n=%d\n",m,n);
   }
   //else use default value for m,n
 
-  *A = (DataType *)mkl_calloc( m*n,sizeof( DataType ), 64 ); 
-  if (*A == NULL ) {
-    printf( "\n ERROR: Can't allocate memory for matrix A. Aborting... \n\n");
-    mkl_free(*A);
-    exit (0);
-  }
 
   //if matB_filename exists, read in dimensions
   // check for input file(s)
@@ -143,18 +193,11 @@ printf("_n=%d p=%d\n",_n,p);
      transposeB=true; 
      printf("Transposing B for computational efficiency in GEMMs\n");
      printf("transposed _n=%d p=%d\n",_n,p);
-   }
+  }
 
   //check that inner dimension matches
   assert(n==_n);
 
-  //else use default value for n,p
-  *B = (DataType *)mkl_calloc( n*p,sizeof( DataType ), 64 );
-  if (*B == NULL ) {
-    printf( "\n ERROR: Can't allocate memory for matrix B. Aborting... \n\n");
-    mkl_free(*B);
-    exit (0);
-  }
 
   printf("m=%d n=%d p=%d\n",m,n,p);
 
@@ -165,11 +208,7 @@ printf("_n=%d p=%d\n",_n,p);
     exit (0);
   }
   
-  __assume_aligned(A, 64);
-  __assume_aligned(B, 64);
   __assume_aligned(C, 64);
-  //__assume(m%16==0);
- 
 
   //setup random numbers to create some synthetic matrices for correlation
   // if input files do not exist
@@ -188,21 +227,18 @@ printf("_n=%d p=%d\n",_n,p);
   //These matrices are of type single precision floating point values
   
   // check for input file(s)
-  mat_A_file.open(matA_filename,ios::in);
-  if(mat_A_file.is_open()){
-     // if found then read
-     std::getline(mat_A_file, text);
-     //m = convert_to_val(text);
-     std::getline(mat_A_file, text);
-     //n = convert_to_val(text);
-     for(int i=0;i<m*n;++i){ 
-        std::getline(mat_A_file, text);
-        (*A)[i] = convert_to_val(text);
-	//if(isnan((*A)[i])){printf("A[%d]==NAN\n",i);} 
-     }
-     mat_A_file.close();
-  }
+  if( read_matrix_file(matA_filename, A, m, n) )
+  {}
   else{ //else compute and then write matrix A
+
+     *A = (DataType *)mkl_calloc( m*n,sizeof( DataType ), 64 );
+     if (*A == NULL ) {
+        printf( "\n ERROR: Can't allocate memory for matrix A. Aborting... \n\n");
+        mkl_free(*A);
+        exit (0);
+     }
+     __assume_aligned(A, 64);
+
     //random assignemnt of threads gives inconsistent values, so keep serial
     int i;
     #pragma omp parallel for private (i)
@@ -216,29 +252,21 @@ printf("_n=%d p=%d\n",_n,p);
     (*A)[((m-1)*n-1)]= MISSING_MARKER;
 
     //write matrix to file
-    mat_A_file.open(matA_filename,ios::out);
-    mat_A_file << m;
-    mat_A_file << n;
-    for(int i=0;i<m*n;++i) mat_A_file << (*A)[i] << '\n';
-    mat_A_file.close();
+    print_matrix(matA_filename, *A, m, n);
   }
- 
-  //ceb Should write  out matrix and read in for future use.
-  // check for input file(s)
-  mat_B_file.open(matB_filename,ios::in);
-  if(mat_B_file.is_open()){
-     std::getline(mat_B_file, text);
-     //m = convert_to_val(text);
-     std::getline(mat_B_file, text);
-     //n = convert_to_val(text);
-     for(int i=0;i<n*p;++i){
-        std::getline(mat_B_file, text);
-        (*B)[i] = convert_to_val(text);
-        //if(isnan((*B)[i]) ){printf("B[%d]==NAN\n",i);}
-     }
-     mat_B_file.close();
-  }
+
+  if( read_matrix_file(matB_filename, B, p, n) )
+  {}
   else{ //else compute and then write matrix B
+
+     *B = (DataType *)mkl_calloc( p*n,sizeof( DataType ), 64 );
+     if (*B == NULL ) {
+        printf( "\n ERROR: Can't allocate memory for matrix B. Aborting... \n\n");
+        mkl_free(*B);
+        exit (0);
+     }
+     __assume_aligned(B, 64);
+
     int i;
     //random assignemnt of threads gives inconsistent values, so keep serial
     #pragma omp parallel for private (i)
@@ -250,13 +278,9 @@ printf("_n=%d p=%d\n",_n,p);
     (*B)[0]          = MISSING_MARKER;
     (*B)[n*p-1]      = MISSING_MARKER;
     (*B)[((n-1)*p-1)]= MISSING_MARKER;
-   
+
     //write matrix to file
-    mat_B_file.open(matB_filename,ios::out);
-    mat_B_file << n;
-    mat_B_file << p;
-    for(int i=0; i<n*p; ++i) mat_B_file << (*B)[i];
-    mat_B_file.close();
+    print_matrix(matB_filename, *B, n, p);
   }
 #if 0
   for (int i=0; i<m; i++) { for(int j=0;j<n;++j){printf("A[%d,%d]=%e\n",i,j,(*A)[i*n+j]);}}
@@ -295,7 +319,7 @@ int pcc_naive(int m, int n, int p,
 
         for (k=0; k<n; k++) {
           //if missing data exists decrement divisor for mean calculation
-          if (std::isnan(A[i*n+k]) || std::isnan(B[j*n+k])){
+          if (isnan(A[i*n+k]) || isnan(B[j*n+k])){
              nn--;
           }
           else{
@@ -402,7 +426,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {	
-	if (std::isnan(A[i*n+k])) {
+	if (isnan(A[i*n+k])) {
 	  amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
 	}
       }
@@ -414,7 +438,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
-	if (std::isnan(B[j*n+k])) {
+	if (isnan(B[j*n+k])) {
 	  bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
 	}
       }
@@ -440,7 +464,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private(i)
     for(i=0; i<m*p; i++){
       N[i] = 1./(ul_n-M[i]);
-      if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
+      if(isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
     }
     mkl_free(M);
 
@@ -450,7 +474,7 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(i)
     for (i=0; i<m*n; i++) {
-      if (std::isnan(A[i])) { A[i]=0.0; }
+      if (isnan(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
     //vsSqr(m*n,A,AA);
@@ -462,7 +486,7 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(j)
     for (j=0; j<n*p; j++) {
-      if (std::isnan(B[j])) { B[j]=0.0; }
+      if (isnan(B[j])) { B[j]=0.0; }
       else{ UnitB[j]=1; }
     }
     //vsSqr(n*p,B,BB);
@@ -657,12 +681,10 @@ int main (int argc, char **argv) {
 
 
 
-#if 0
+#if 1
   //read in results file for comparison
   fstream test_file;
-  //test_file.open("results_6k_x_29k_values.txt",ios::in);
   test_file.open("6kvs28k.txt",ios::in);
-  //test_file.open("flat.txt",ios::in);
   if(test_file.is_open()){
      float tmp;
      // if found then read
@@ -676,16 +698,16 @@ int main (int argc, char **argv) {
      for(int i=0;i<dim1*dim2;++i) test_file >> C[i];
      test_file.close();
   }
+#else
+int dim1,dim2;
+char* C_filename="6kvs28k.txt";
+read_matrix_file(C_filename, &C, dim1, dim2);
 #endif 
+
 
 #if 0
     //write R matrix to file
-    fstream mat_R_file;
-    mat_R_file.open("MPCC_computed.txt",ios::out);
-    mat_R_file << m << '\n';
-    mat_R_file << p << '\n';
-    for(int i=0;i<m*p;++i) mat_R_file << R[i] << '\n';
-    mat_R_file.close();
+    print_matrix("MPCC_computed.txt", R, m, p);
 #endif
  
   DataType R_2norm = 0.0;
@@ -693,7 +715,7 @@ int main (int argc, char **argv) {
   DataType diff_2norm = 0.0;
   DataType relativeNorm = 0.0;
 
-#if 0
+#if 1
   for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
   C_2norm=sqrt(C_2norm);
   for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
@@ -712,13 +734,8 @@ int main (int argc, char **argv) {
 
 
 #if 0
-    //write R matrix to file
-    fstream diff_file;
-    diff_file.open("diff.txt",ios::out);
-    diff_file << m << '\n';
-    diff_file << p << '\n';
-    for(int i=0;i<m*p;++i) diff_file << R[i] << " " << C[i] << " " <<diff[i] << '\n';
-    diff_file.close();
+    //write diff matrix to file
+    print_matrix("diff.txt", diff, m, p);
 #endif
 
 
