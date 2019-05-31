@@ -2,6 +2,7 @@
 # MPCC call function to R
 #
 
+# PCC matrix wrapper
 PCC <- function(aM, bM) {
   res <- .C("R_pcc_matrix", aM = as.double(aM),
                             bM = as.double(bM),
@@ -12,6 +13,18 @@ PCC <- function(aM, bM) {
   return(res)
 }
 
+# PCC naive wrapper
+PCC.naive <- function(aM, bM) {
+  res <- .C("R_pcc_naive", aM = as.double(aM),
+                           bM = as.double(bM),
+                           n = as.integer(ncol(aM)), # nInd
+                           m = as.integer(nrow(aM)), # nPhe A
+                           p = as.integer(nrow(bM)), # nPhe B
+                           res = as.double(rep(0, nrow(aM) * nrow(bM))), NAOK = TRUE, package = "MPCC")
+  return(res)
+}
+
+# Test function to compare to the standard R implementation
 test <- function() {
     require(MPCC)
     set.seed(1)
@@ -19,9 +32,9 @@ test <- function() {
     # Percentage of missing data
     missing = 0.05
 
-    times.ref <- c()
-    times.ref.missing <- c()
-    times.pcc <- c()
+    times.ref <- c() # time for cor reference (no missing data)
+    times.ref.missing <- c() # time for cor reference (missing data)
+    times.pcc <- c() # time for the pcc matrix version
     sizes <- c(50, 100, 150, 200, 250, 300, 400, 500, 750, 1000)
     for(x in sizes) {
       time.ref <- c()

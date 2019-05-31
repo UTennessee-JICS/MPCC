@@ -59,6 +59,7 @@
     #endif
 
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+    int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
 #endif //__MPCC_H__
 
