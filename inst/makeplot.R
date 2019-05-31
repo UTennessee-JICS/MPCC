@@ -1,0 +1,2 @@
+library(MPCC)
+test()
