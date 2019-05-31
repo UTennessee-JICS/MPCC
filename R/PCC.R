@@ -76,6 +76,10 @@ test <- function() {
     ref.med.missing <- apply(times.ref.missing, 2, median)
     ref.sd.missing <- apply(times.ref.missing, 2, sd)
 
+    write.table(times.ref, "times.ref.txt", sep = "\t", quote = FALSE)
+    write.table(times.ref.missing, "times.ref.missing.txt", sep = "\t", quote = FALSE)
+    write.table(times.pcc, "times.pcc.txt", sep = "\t", quote = FALSE)
+
     # Make the plot
     mY <- max(c(times.ref.missing, times.ref, times.pcc))
     png("my.png", width=1024, height = 800)
