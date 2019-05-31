@@ -78,18 +78,20 @@ test <- function() {
 
     # Make the plot
     mY <- max(c(times.ref.missing, times.ref, times.pcc))
-    plot(c(min(sizes), max(sizes)), c(0, mY), t = 'n', xlab = "size", ylab = "time (s)")
+    png("my.png", width=1024, height = 800)
+      plot(c(min(sizes), max(sizes)), c(0, mY), t = 'n', xlab = "size", ylab = "time (s)")
 
-    polygon(x = c(sizes, rev(sizes)), y = c(ref.med + ref.sd, rev(ref.med - ref.sd)), col="blue")
-    points(x = sizes, y = ref.med, t = 'l', col="blue", lwd=2)
+      polygon(x = c(sizes, rev(sizes)), y = c(ref.med + ref.sd, rev(ref.med - ref.sd)), col="blue")
+      points(x = sizes, y = ref.med, t = 'l', col="blue", lwd=2)
 
-    polygon(x = c(sizes, rev(sizes)), y = c(pcc.med + pcc.sd, rev(pcc.med - pcc.sd)), col="orange")
-    points(x = sizes, y = pcc.med, t = 'l', col="orange", lwd=2)
+      polygon(x = c(sizes, rev(sizes)), y = c(pcc.med + pcc.sd, rev(pcc.med - pcc.sd)), col="orange")
+      points(x = sizes, y = pcc.med, t = 'l', col="orange", lwd=2)
 
-    polygon(x = c(sizes, rev(sizes)), 
-            y = c(ref.med.missing + ref.sd.missing, rev(ref.med.missing - ref.sd.missing)), col="lightblue")
-    points(x = sizes, y = ref.med.missing, t = 'l', col="lightblue", lwd=2)
+      polygon(x = c(sizes, rev(sizes)), 
+              y = c(ref.med.missing + ref.sd.missing, rev(ref.med.missing - ref.sd.missing)), col="lightblue")
+      points(x = sizes, y = ref.med.missing, t = 'l', col="lightblue", lwd=2)
 
-    legend("topleft", c("R cor()", "R cor(5% missing)", "Matrix PCC"), fill = c("blue", "lightblue", "orange"))
+      legend("topleft", c("R cor()", "R cor(5% missing)", "Matrix PCC"), fill = c("blue", "lightblue", "orange"))
+    dev.off()
 }
 
