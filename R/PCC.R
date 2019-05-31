@@ -80,6 +80,10 @@ test <- function() {
     write.table(times.ref.missing, "times.ref.missing.txt", sep = "\t", quote = FALSE)
     write.table(times.pcc, "times.pcc.txt", sep = "\t", quote = FALSE)
 
+    cat(paste(sizes), "\n", file = "speedup.txt")
+    cat("nonmissing", paste(ref.med / pcc.med), "\n", file = "speedup.txt", append = TRUE)
+    cat("missing", paste(ref.med.missing / pcc.med), "\n", file = "speedup.txt", append = TRUE)
+
     # Make the plot
     mY <- max(c(times.ref.missing, times.ref, times.pcc))
     png("my.png", width=1024, height = 800)
