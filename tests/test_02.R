@@ -9,7 +9,7 @@ mAB <- genAB(p = 5, n = 15, m = 10)
 ref <- cor(mAB[["A"]], mAB[["B"]])
 mpcc <- PCC(mAB[["A"]], mAB[["B"]])
 
-if (sum(round(matrix(mpcc$res, 5, 10, byrow=TRUE) - ref, 12)) != 0) {
+if (sum(round(mpcc$res - ref, 12)) != 0) {
   stop("Inaccurate results for 5x10 matrix")
 }
 

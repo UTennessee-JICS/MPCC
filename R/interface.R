@@ -8,6 +8,8 @@ PCC <- function(aM, bM, use = NULL) {
                             m = as.integer(ncol(aM)), # nPhe A
                             p = as.integer(ncol(bM)), # nPhe B
                             res = as.double(rep(0, ncol(aM) * ncol(bM))), NAOK = TRUE, package = "MPCC")
+
+  res$res <- matrix(res$res, ncol(aM), ncol(bM), byrow=TRUE)
   return(res)
 }
 
@@ -19,6 +21,7 @@ PCC.naive <- function(aM, bM, use = NULL) {
                            m = as.integer(ncol(aM)), # nPhe A
                            p = as.integer(ncol(bM)), # nPhe B
                            res = as.double(rep(0, ncol(aM) * ncol(bM))), NAOK = TRUE, package = "MPCC")
+  res$res <- matrix(res$res, ncol(aM), ncol(bM), byrow=TRUE)
   return(res)
 }
 

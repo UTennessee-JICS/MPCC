@@ -12,7 +12,7 @@ mB <- matrix(runif(x * x), x, x)
 ref <- cor(mA, mB)
 mpcc <- PCC(mA, mB)
 
-if (sum(round(matrix(mpcc$res, x, x, byrow=TRUE) - ref, 12)) != 0) {
+if (sum(round(mpcc$res - ref, 12)) != 0) {
   stop("Inaccurate results for 5x5 matrix")
 }
 
