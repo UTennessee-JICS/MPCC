@@ -33,18 +33,18 @@ using namespace std;
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
-};
+}
 
 static DataType TimeSpecToNanoSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec*1000000000.0 + (DataType)ts->tv_nsec;
-};
+}
  
 int bitsum(unsigned long n){
   int c=0;
   int nn=n;
   for (c=0; nn; ++c) { nn&=nn-1;}
   return c;
-};
+}
 
 DataType convert_to_val(string text)
 {
@@ -52,7 +52,7 @@ DataType convert_to_val(string text)
     if(text=="nan" || text=="NaN" || text=="NAN"){ val = NANF;}
     else{ val = atof(text.c_str());}
     return val;
-};
+}
 
 #ifndef USING_R
 
@@ -256,7 +256,7 @@ int pcc_naive(int m, int n, int p,
   //sum_i( x[i]-x_mean[i])*(y[i]-y_mean[i]) ) /
   //     [ sqrt( sum_i(x[i]-x_mean[i])^2 ) sqrt(sum_i(y[i]-y_mean[i])^2 ) ]
   for (int ii=0; ii<count; ii++) {
-    #pragma omp parallel for private (i,j,k)
+    //Disabled pragma, because of weird sorting order errors #pragma omp parallel for private (i,j,k)
     for (i=0; i<m; i++) {
       for (j=0; j<p; j++) {
 
@@ -294,6 +294,8 @@ int pcc_naive(int m, int n, int p,
   }
   return 0;
 }
+
+#ifndef NOMKL
 
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
@@ -593,6 +595,8 @@ int pcc_matrix(int m, int n, int p,
 
   return 0;
 };
+
+#endif
 
 #ifndef USING_R
 

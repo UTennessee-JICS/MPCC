@@ -5,10 +5,16 @@
  **********************************************************************/
 #ifndef __MPCC_H__
   #define __MPCC_H__
-    #include <mkl.h>
-    #ifdef STANDALONE
 
-      #error "SHOULD NOT BE HERE"
+    #ifdef NOMKL // Disable the mkl as needed
+      #define MKL 0
+    #else
+      #include <mkl.h>
+    #endif
+
+    #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
+
+      #error "Completely standalone (TODO: export as R-bound DYNLIB)"
  
       #include <stdio.h>
       #include <stdlib.h>
@@ -28,7 +34,7 @@
         printf(format, __VA_ARGS__); \
         exit(-1); }
     #else
-      #define USING_R
+      #define USING_R 1
       #define DOUBLE 1
       #include <R.h>
       #include <Rmath.h>
@@ -39,24 +45,24 @@
       #define err(format, ...) { \
         error(format, __VA_ARGS__);}
       #endif
-    
-    #if DOUBLE
-      #define DataType double
-      #define VSQR vdSqr
-      #define VMUL vdMul
-      #define VSQRT vdSqrt
-      #define VDIV vdDiv
-      #define GEMM cblas_dgemm
-      #define AXPY cblas_daxpy
-    #else
-      #define DataType float
-      #define VSQR vsSqr
-      #define VMUL vsMul
-      #define VSQRT vsSqrt
-      #define VDIV  vsDiv
-      #define GEMM cblas_sgemm
-      #define AXPY cblas_saxpy
-    #endif
+
+#if DOUBLE
+  #define DataType double
+  #define VSQR vdSqr
+  #define VMUL vdMul
+  #define VSQRT vdSqrt
+  #define VDIV vdDiv
+  #define GEMM cblas_dgemm
+  #define AXPY cblas_daxpy
+#else
+  #define DataType float
+  #define VSQR vsSqr
+  #define VMUL vsMul
+  #define VSQRT vsSqrt
+  #define VDIV  vsDiv
+  #define GEMM cblas_sgemm
+  #define AXPY cblas_saxpy
+#endif
 
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
     int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);

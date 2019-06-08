@@ -6,10 +6,11 @@ AC_ARG_WITH([mkl-home],
             AC_HELP_STRING([--with-mkl-home=MKL_HOME],
                            [the location of MKL]),
             [mkl_home=$withval])
-MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I."
 if test [ -n "$mkl_home" ] ; then
-   MPCC_CPPFLAGS="-fopenmp -DMKL_ILP64 -std=c++11 -I. -I$mkl_home/include/"
+   MPCC_CPPFLAGS="-fopenmp -lgomp -DMKL_ILP64 -std=c++11 -I. -I$mkl_home/include/"
    LIBS="-L$mkl_home -Wl,--start-group $mkl_home/lib/intel64/libmkl_intel_ilp64.a $mkl_home/lib/intel64/libmkl_intel_thread.a $mkl_home/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl ${LIBS}"
+else
+   MPCC_CPPFLAGS="-DNOMKL -fopenmp -lgomp -std=c++11 -I."
 fi
 
 dnl Now find the compiler and compiler flags to use
@@ -26,12 +27,6 @@ AC_PROG_CC
 AC_PROG_CPP
 
 CPPFLAGS="${CPPFLAGS} ${MPCC_CPPFLAGS}"
-
-dnl Check the headers can be found
-AC_CHECK_HEADERS(mkl.h)
-if test "${ac_cv_header_mkl_h}" = no; then
-   AC_MSG_ERROR("mkl.h not found")
-fi
 
 dnl substitute MPCC_CPPFLAGS and LIBS
 AC_SUBST(MPCC_CPPFLAGS)
