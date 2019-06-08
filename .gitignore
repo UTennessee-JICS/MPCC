@@ -8,3 +8,4 @@ src/Makevars
 *.PUB
 .RData
 .Rhistory
+src/symbols.rds
