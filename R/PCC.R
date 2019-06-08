@@ -3,9 +3,9 @@
 #
 
 # PCC matrix wrapper
-PCC <- function(aM, bM) {
+PCC <- function(aM, bM, use = NULL) {
   res <- .C("R_pcc_matrix", aM = as.double(aM),
-                            bM = as.double(bM),
+                            bM = as.double(t(bM)),
                             n = as.integer(ncol(aM)), # nInd
                             m = as.integer(nrow(aM)), # nPhe A
                             p = as.integer(nrow(bM)), # nPhe B
@@ -14,14 +14,47 @@ PCC <- function(aM, bM) {
 }
 
 # PCC naive wrapper
-PCC.naive <- function(aM, bM) {
+PCC.naive <- function(aM, bM, use = NULL) {
   res <- .C("R_pcc_naive", aM = as.double(aM),
-                           bM = as.double(bM),
+                           bM = as.double(t(bM)),
                            n = as.integer(ncol(aM)), # nInd
                            m = as.integer(nrow(aM)), # nPhe A
                            p = as.integer(nrow(bM)), # nPhe B
                            res = as.double(rep(0, nrow(aM) * nrow(bM))), NAOK = TRUE, package = "MPCC")
   return(res)
+}
+
+# Generate A and B matrices, using p,n,m as input size for A (p*n) and B (m*n)
+genAB <- function(p = 100, n = 150, m = 20, missing = 0) {
+  mA <- matrix(rnorm(p * n), n, p)
+  mB <- matrix(rnorm(m * n), n, m)
+  if (missing > 0) {
+    mA[sample(p*n, (p * n * missing))] <- NA
+    mB[sample(m*n, (m * n * missing))] <- NA
+  }
+  return(list(A = mA, B = mB))
+}
+
+# run the PNM timing
+runPNM <- function(fun = cor, p = 100, n = 150, m = 20, missing = 0, use = "everything") {
+  mAB <- genAB(p,n,m,missing)
+
+  start <- proc.time()[3] # Start time
+  res <- fun(mAB[["A"]], mAB[["B"]], use = use)
+  elapsed <- proc.time()[3] - start # Add time information
+
+  return(list(res = res, time = elapsed))
+}
+
+testRunPNM <- function(){
+ require(MPCC)
+ res0 <- genAB()
+ full.cor <- runPNM(fun = cor)
+ full.pcc <- runPNM(fun = PCC)
+ m05.cor <- runPNM(fun = cor, missing = 0.05, use = "pair")
+ m05.pcc <- runPNM(fun = PCC, missing = 0.05, use = "pair")
+ m10.cor <- runPNM(fun = cor, missing = 0.10, use = "pair")
+ m10.pcc <- runPNM(fun = PCC, missing = 0.10, use = "pair")
 }
 
 # Test function to compare to the standard R implementation
@@ -35,7 +68,7 @@ test <- function() {
     times.ref <- c() # time for cor reference (no missing data)
     times.ref.missing <- c() # time for cor reference (missing data)
     times.pcc <- c() # time for the pcc matrix version
-    sizes <- c(50, 100, 150, 200, 250, 300, 400, 500, 750, 1000)
+    sizes <- c(50, 100, 150, 200, 250, 300, 400)
     for(x in sizes) {
       time.ref <- c()
       time.ref.missing <- c()
