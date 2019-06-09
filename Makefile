@@ -11,7 +11,7 @@ CXXFLAGS+=$(BUILD)
 
 SRCDIRS = ./src/
 SRCFILES = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/MPCC.cpp))
-SRCS = MPCC.cpp $(SRCFILES) 
+SRCS = MPCC.cpp MPCCnaive.cpp $(SRCFILES) 
 OBJS = $(SRCFILES:%.cpp=%.o)
 
 LIBDIR		= -L$(MKLROOT)/lib
