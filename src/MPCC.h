@@ -40,7 +40,6 @@
         printf(format, __VA_ARGS__); \
         exit(-1); }
     #else
-      #define USING_R 1
       #define DOUBLE 1
       #include <R.h>
       #include <Rmath.h>
