@@ -5,18 +5,19 @@ dnl or from an environment variable.
 AC_ARG_WITH([mkl-home],
             AC_HELP_STRING([--with-mkl-home=MKL_HOME],
                            [the location of MKL]),
-            [mkl_home=$withval])
-if test [ -n "$mkl_home" ] ; then
-   MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I. -I$mkl_home/include/"
-   LIBS="-L$mkl_home -Wl,--start-group $mkl_home/lib/intel64/libmkl_intel_ilp64.a $mkl_home/lib/intel64/libmkl_intel_thread.a $mkl_home/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl ${LIBS}"
+            [MKL_HOME=$withval])
+if test [ -n "$MKL_HOME" ] ; then
+   MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I. -I$MKL_HOME/include/"
+   LIBS="-Wl,--start-group $MKL_HOME/lib/intel64/libmkl_intel_ilp64.a $MKL_HOME/lib/intel64/libmkl_intel_thread.a $MKL_HOME/lib/intel64/libmkl_core.a -Wl,--end-group -lm -ldl ${LIBS}"
 else
+   echo "[WARN] Could not determine MKL_HOME"
    MPCC_CPPFLAGS="-DNOMKL -std=c++11 -I."
 fi
 
 dnl Now find the compiler and compiler flags to use
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
+  echo "[WARN] Could not determine R_HOME"
   exit 1
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
