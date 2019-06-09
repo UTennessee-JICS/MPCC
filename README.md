@@ -13,54 +13,43 @@ library(devtools)
 install_github("DannyArends/MPCC", ref="cleanrpack")
 ```
 
-### Dependencies
-
+### Additional dependencies for the optimized MKL version
 #### Install libiomp5 and libiomp-dev
 
-Get OMP for multi-threading support
+Should be provided by R, but sometimes required to get OMP development lib for multi-threading support
 
 ```
 sudo apt-get install libiomp5 libiomp-dev
 ```
 
-#### Install Intel MKL
+#### Local installation of Intel MKL headers and libraries
 
 Install the Intel MKL using the following steps
 
 ```
-## Add the intel keys to the GPG
+#- Add the intel keys to the GPG
 wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
 sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
 
-## Add the MKL deb repository
+#- Add the MKL deb repository
 sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list'
 
-# Update and install MKL 64 bit
+#- Update and install MKL 64 bit
 sudo apt-get update
 sudo apt-get install intel-mkl-64bit-2018.2-046
 ```
 
-### Installing the R package
+### Optimized version compiled with MKL
 
-Install the naive version into R
-
-```
-R CMD INSTALL MPCC
-```
-
-MKL optimized version and naive version into R
+Clone the repository from Github, and use --configure-args='--with-mkl-home=<path>' to 
+provide the location of $MKL_HOME optimized version and naive version into R.
 
 ```
+git clone git@github.com:DannyArends/MPCC.git
 R CMD INSTALL --configure-args='--with-mkl-home=/opt/intel/compilers_and_libraries_2018.2.199/linux/mkl/' MPCC
 ```
 
-### Loading the package into R
-
-```R
-library("MPCC")
-```
-    
-### Documentation
+### Load the package into R and get the documentation
 
 ```R
 library(MPCC)              # Load the library
