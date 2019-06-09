@@ -39,7 +39,7 @@ sudo apt-get update
 sudo apt-get install intel-mkl-64bit-2018.2-046
 ```
 
-#- Export the path, for automatic linking with MKL
+#- Export MKL_HOME, for automatic linking with Intel MKL
 ```
 export MKL_HOME=/path/to/mkl/
 ```
