@@ -41,7 +41,7 @@ sudo apt-get install intel-mkl-64bit-2018.2-046
 
 ### Optimized version compiled with MKL
 
-Clone the repository from Github, and use --configure-args='--with-mkl-home=<path>' to 
+Clone the repository from Github, and use --configure-args='--with-mkl-home=/path/to/mkl' to 
 provide the location of $MKL_HOME optimized version and naive version into R.
 
 ```
