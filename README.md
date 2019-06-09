@@ -6,6 +6,13 @@ The code presented here is an attempt to provide an algorithm to perform Pearson
 The initial code considers implementation on a multicore (single node) shared memory machine with thread level parallelism and vectorization capability.
 In future versions of this code, we hope to expand the algorithm to include distributed memory parallelism.
 
+### Install the R package from Github
+
+```R
+library(devtools)
+install_github("DannyArends/MPCC", ref="cleanrpack")
+```
+
 ### Dependencies
 
 #### Install libiomp5 and libiomp-dev
