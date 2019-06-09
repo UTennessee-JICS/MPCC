@@ -39,9 +39,22 @@ sudo apt-get update
 sudo apt-get install intel-mkl-64bit-2018.2-046
 ```
 
+#- Export the path, for automatic linking with MKL
+```
+export MKL_HOME=/path/to/mkl/
+```
+
 ### Optimized version compiled with MKL
 
-Clone the repository from Github, and use --configure-args='--with-mkl-home=/path/to/mkl' to 
+Install from Github after setting MKL_HOME, this will detect the ENV variable and compile 
+the optimized version and naive version into R.
+
+```R
+library(devtools)
+install_github("DannyArends/MPCC", ref="cleanrpack")
+```
+
+Or, alternatively clone the repository from Github, and use --configure-args='--with-mkl-home=/path/to/mkl/' to 
 provide the location of $MKL_HOME, this will compile the optimized version and naive version into R.
 
 ```
