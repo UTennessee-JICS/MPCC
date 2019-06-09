@@ -6,6 +6,12 @@
 #ifndef __MPCC_H__
   #define __MPCC_H__
 
+    #define BILLION  1000000000L
+
+    //#define NANF std::nanf("1")
+    #define NANF std::nan("1")
+    #define MISSING_MARKER NANF
+
     #ifdef NOMKL // Disable the mkl as needed
       #define MKL 0
     #else
@@ -64,6 +70,7 @@
   #define AXPY cblas_saxpy
 #endif
 
+    // Forward declaration of the functions
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
     int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
