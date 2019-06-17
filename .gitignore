@@ -9,3 +9,5 @@ src/Makevars
 .RData
 .Rhistory
 src/symbols.rds
+src-i386/
+src-x64/
