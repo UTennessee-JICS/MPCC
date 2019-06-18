@@ -901,8 +901,8 @@ int main (int argc, char **argv) {
   pcc_naive(m, n, p, A, B, R);
 #else  
   printf("matrix PCC implmentation\n");
-  //pcc_matrix(m, n, p, A, B, R);
-  pcc_vector(m, n, p, A, B, R);
+  pcc_matrix(m, n, p, A, B, R);
+  //pcc_vector(m, n, p, A, B, R);
 #endif
   clock_gettime(CLOCK_MONOTONIC, &stopPCC);
   accumR =  (TimeSpecToSeconds(&stopPCC)- TimeSpecToSeconds(&startPCC));
