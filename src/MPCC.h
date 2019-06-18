@@ -8,10 +8,10 @@
 
     #define BILLION  1000000000L
 
-    #ifdef MKL // Disable the mkl as needed
+    #ifndef NOMKL // Disable the mkl as needed
       #include <mkl.h>
     #else
-      #define NOMKL 1
+      #include <math.h>
     #endif
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
@@ -22,7 +22,7 @@
       #include <stdlib.h>
       #include <stdint.h>
       #include <cfloat>
-      #include <math.h>
+
       #include <cmath>
       #include <iostream>
       #include <fstream>

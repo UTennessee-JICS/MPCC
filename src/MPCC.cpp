@@ -239,6 +239,7 @@ printf("_n=%d p=%d\n",_n,p);
 
 #endif
 
+#ifndef NOMKL
 
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
@@ -527,6 +528,10 @@ int pcc_matrix(int m, int n, int p,
   return 0;
 };
 
+#endif
+
+#ifndef NOMKL
+#ifdef PCC_VECTOR
 
 //This function uses bit arithmetic to mask vectors prior to performing a number of FMA's
 //The intention is to improve upon the matrix x matrix missing data PCC algorithm by reducing uneccessary computations
@@ -806,6 +811,7 @@ int pcc_vector(int m, int n, int p,
   return 0;
 };
 
+#endif
 #endif
 
 #ifndef USING_R
