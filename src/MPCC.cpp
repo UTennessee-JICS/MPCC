@@ -13,15 +13,10 @@
 #include "MPCC.h"
 
 using namespace std;
-#define BILLION  1000000000L
 
 #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
 #define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
 #define DEV_CHECKPT printf("Checkpoint: %s, line %d\n", __FILE__, __LINE__); fflush(stdout); 
-
-//#define NANF std::nanf("1")
-#define NANF std::nan("1")
-#define MISSING_MARKER NANF
 
 #ifndef NAIVE //default use matrix version
   #define NAIVE 0
@@ -33,36 +28,40 @@ using namespace std;
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
-};
+}
 
 static DataType TimeSpecToNanoSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec*1000000000.0 + (DataType)ts->tv_nsec;
-};
- 
+}
+
+// This function is an implementation of a bitsum of an unsigned long n;
 int bitsum(unsigned long n){
   int c=0;
   int nn=n;
   for (c=0; nn; ++c) { nn&=nn-1;}
   return c;
-};
+}
 
+// This function convert a string to datatype (double or float);
 DataType convert_to_val(string text)
 {
     DataType val;
     if(text=="nan" || text=="NaN" || text=="NAN"){ val = NANF;}
     else{ val = atof(text.c_str());}
     return val;
-};
+}
 
 #ifndef USING_R
 
+// This function initialized the matrices for m, n, p sized A and the B and result (C) matrices
+// Not part of the R interface since R initializes the memory
 void initialize(int &m, int &n, int &p, int seed,
-		DataType **A, 
-                DataType **B,
-		DataType **C,
-		char* matA_filename,
- 		char* matB_filename,
-		bool &transposeB)
+    DataType **A, 
+    DataType **B,
+    DataType **C,
+    char* matA_filename,
+    char* matB_filename,
+    bool &transposeB)
 {
   // A is m x n (tall and skinny) row major order
   // B is n x p (short and fat) row major order
@@ -81,7 +80,7 @@ void initialize(int &m, int &n, int &p, int seed,
      m = convert_to_val(text);
      std::getline(mat_A_file, text);
      n = convert_to_val(text);
-printf("m=%d n=%d\n",m,n);
+     printf("m=%d n=%d\n",m,n);
      mat_A_file.close();
   }
   //else use default value for m,n
@@ -240,60 +239,7 @@ printf("_n=%d p=%d\n",_n,p);
 
 #endif
 
-//This function is an implementation of a pairwise vector * vector correlation.
-//A is matrix of X vectors and B is transposed matrix of Y vectors:
-// C = [N sum(AB) - (sumA)(sumB)] /
-//     sqrt[ (N sumA^2 - (sum A)^2)[ (N sumB^2 - (sum B)^2) ]
-int pcc_naive(int m, int n, int p,
-	      DataType* A, DataType* B, DataType* C)
-{
-  DataType sab,sa,sb,saa,sbb;
-  int nn;
-  int i,j,k;
-  int count=1;
-
-  //sum_i( x[i]-x_mean[i])*(y[i]-y_mean[i]) ) /
-  //     [ sqrt( sum_i(x[i]-x_mean[i])^2 ) sqrt(sum_i(y[i]-y_mean[i])^2 ) ]
-  for (int ii=0; ii<count; ii++) {
-    #pragma omp parallel for private (i,j,k)
-    for (i=0; i<m; i++) {
-      for (j=0; j<p; j++) {
-
-        sa=0.0;
-        sb=0.0;
-        saa=0.0;
-        sbb=0.0;
-        sab=0.0;
-        nn=n;
-
-        for (k=0; k<n; k++) {
-          //if missing data exists decrement divisor for mean calculation
-          if (std::isnan(A[i*n+k]) || std::isnan(B[j*n+k])){
-             nn--;
-          }
-          else{
-             //compute components of PCC function
-             sa  += A[i*n+k];
-             sb  += B[j*n+k];
-             sab += A[i*n+k] * B[j*n+k];
-             saa += A[i*n+k] * A[i*n+k];
-             sbb += B[j*n+k] * B[j*n+k];
-          }
-        }
-          
-        if(nn>1){//Note edge case: if nn==1 then denominator is Zero! (saa==sa*sa, sbb==sb*sb)
-          C[i*p+j] = (nn*sab - sa*sb) / sqrt( (nn*saa - sa*sa)*(nn*sbb - sb*sb) );
-          //C[i*p+j] = (sab - sa*sb/nn) / sqrt( (saa - sa*sa/nn)*(sbb - sb*sb/nn) );
-          //if( sqrt( (saa - sa*sa/nn)*(sbb - sb*sb/nn) ) ==0.0){printf("Error: R[%d,%d] denominator is zero! sa[%d]=%e sb[%d]=%e \n",i,j,i,sa,j,sb);}
-        }
-        else{/*printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j);*/ C[i*p+j]=0.0;}
-        //else{/*printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j);*/ C[i*p+j]=NANF;}
-      }
-    }
-  }
-  return 0;
-}
-
+#ifndef NOMKL
 
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
@@ -582,6 +528,10 @@ int pcc_matrix(int m, int n, int p,
   return 0;
 };
 
+#endif
+
+#ifndef NOMKL
+#ifdef PCC_VECTOR
 
 //This function uses bit arithmetic to mask vectors prior to performing a number of FMA's
 //The intention is to improve upon the matrix x matrix missing data PCC algorithm by reducing uneccessary computations
@@ -860,6 +810,9 @@ int pcc_vector(int m, int n, int p,
 
   return 0;
 };
+
+#endif
+#endif
 
 #ifndef USING_R
 
