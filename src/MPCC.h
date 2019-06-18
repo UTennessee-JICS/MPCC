@@ -20,7 +20,7 @@
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
 
-      #error "Completely standalone (TODO: export as R-bound DYNLIB)"
+      // #error "Completely standalone (TODO: export as R-bound DYNLIB)"
  
       #include <stdio.h>
       #include <stdlib.h>
@@ -51,26 +51,27 @@
         error(format, __VA_ARGS__);}
       #endif
 
-#if DOUBLE
-  #define DataType double
-  #define VSQR vdSqr
-  #define VMUL vdMul
-  #define VSQRT vdSqrt
-  #define VDIV vdDiv
-  #define GEMM cblas_dgemm
-  #define AXPY cblas_daxpy
-#else
-  #define DataType float
-  #define VSQR vsSqr
-  #define VMUL vsMul
-  #define VSQRT vsSqrt
-  #define VDIV  vsDiv
-  #define GEMM cblas_sgemm
-  #define AXPY cblas_saxpy
-#endif
+  #if DOUBLE
+    #define DataType double
+    #define VSQR vdSqr
+    #define VMUL vdMul
+    #define VSQRT vdSqrt
+    #define VDIV vdDiv
+    #define GEMM cblas_dgemm
+    #define AXPY cblas_daxpy
+  #else
+    #define DataType float
+    #define VSQR vsSqr
+    #define VMUL vsMul
+    #define VSQRT vsSqrt
+    #define VDIV  vsDiv
+    #define GEMM cblas_sgemm
+    #define AXPY cblas_saxpy
+  #endif
 
     // Forward declaration of the functions
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+    int pcc_vector(int m, int n, int p, DataType* A, DataType* B, DataType* P);
     int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
 #endif //__MPCC_H__
