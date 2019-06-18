@@ -8,14 +8,10 @@
 
     #define BILLION  1000000000L
 
-    //#define NANF std::nanf("1")
-    #define NANF std::nan("1")
-    #define MISSING_MARKER NANF
-
-    #ifdef NOMKL // Disable the mkl as needed
-      #define MKL 0
-    #else
+    #ifdef MKL // Disable the mkl as needed
       #include <mkl.h>
+    #else
+      #define NOMKL 1
     #endif
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
@@ -68,6 +64,14 @@
     #define GEMM cblas_sgemm
     #define AXPY cblas_saxpy
   #endif
+
+#ifdef __MINGW32__
+    #define NANF nan("1")
+#else
+    #define NANF std::nan("1")
+#endif
+    
+    #define MISSING_MARKER NANF
 
     // Forward declaration of the functions
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
