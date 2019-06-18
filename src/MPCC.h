@@ -8,7 +8,7 @@
     #include <mkl.h>
     #ifdef STANDALONE
 
-      #error "SHOULD NOT BE HERE"
+      //#error "SHOULD NOT BE HERE"
  
       #include <stdio.h>
       #include <stdlib.h>
@@ -59,6 +59,8 @@
     #endif
 
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+    int pcc_vector(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+    int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
 #endif //__MPCC_H__
 
