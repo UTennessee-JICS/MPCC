@@ -15,7 +15,7 @@ SRCS = MPCC.cpp MPCCnaive.cpp $(SRCFILES)
 OBJS = $(SRCFILES:%.cpp=%.o)
 
 LIBDIR		= -L$(MKLROOT)/lib
-LIB 		= -liomp5 -lmkl_core -lmkl_intel_thread -lmkl_intel_lp64 -lpthread -lstdc++ -lm -ldl
+LIB 		= -DMKL -liomp5 -lmkl_core -lmkl_intel_thread -lmkl_intel_lp64 -lpthread -lstdc++ -lm -ldl
 #LIB 		= -lmkl_intel_lp64 -lmkl_core -liomp5 -lpthread -lstdc++ -lm -ldl
 #LIB 		= -mkl -liomp5 -lpthread -lstdc++ -lm -ldl
 LIBS		 = $(LIBDIR) $(LIB)

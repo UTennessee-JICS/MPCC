@@ -8,9 +8,10 @@
 
     #define BILLION  1000000000L
 
-    #ifndef NOMKL // Disable the mkl as needed
+    #ifdef MKL // Disable the mkl as needed
       #include <mkl.h>
     #else
+      #define NOMKL 1
       #include <math.h>
     #endif
 
