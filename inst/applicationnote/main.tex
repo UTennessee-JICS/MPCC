@@ -9,15 +9,15 @@
 
 \subtitle{High-performance Computing}
 
-\title[MPCC]{Matrix Pearson Correlation Coefficients}
+\title[MPCC]{Matrix Pearson Correlation Coefficients (MPCC) - An R Package for Performant Computation of Pearson Correlations with Missing Data Support}
 \author[Arends \textit{et~al}.]{
 Danny Arends\,$^{\text{\sfb 1, $\dagger$}}$, 
 Mitch Horton\,$^{\text{\sfb 2, $\dagger$}}$ 
 Chad Burdyshaw\,$^{\text{\sfb 2, $\dagger$}}$ 
 Christian Fischer\,$^{\text{\sfb 3}}$ 
 Pjotr Prins\,$^{\text{\sfb 3}}$ 
-Rob W. Williams\,$^{\text{\sfb 3,*}}$ 
-, and Glen Brook\,$^{\text{\sfb 2,*}}$}
+Rob W. Williams\,$^{\text{\sfb 3, *}}$ 
+, and Glen Brook\,$^{\text{\sfb 2, *}}$}
 \address{$^{\text{\sf 1}}$Z{\"u}chtungsbiologie und molekulare 
 Genetik, Albrecht Daniel Thaer-Institut, Berlin, 10115, Germany \\
 $^{\text{\sf 2}}$The Joint Institute for Computational Sciences, 
@@ -44,7 +44,7 @@ field of bioinformatics and computational biology.\\
 \textbf{Results:} In this paper we present an C++ algorithm for fast 
 computation of PCCs using matrix multiplication and vectorization. 
 The implementation is independant of the amount of missing data 
-present. Benchmarks againt the cor() function available in the R show 
+present. Benchmarks againt the $cor()$ function available in the R show 
 that our package sigificantly reduces the runtime with up to 90 fold 
 reduction in computational time on a single machine.\\
 \textbf{Availability:} Code is available under an GPL-v3 
@@ -58,25 +58,33 @@ available at \textit{Bioinformatics} online.}
 \maketitle
 
 \section{Introduction}
-Pearons correlation coefficients introduced by Pearson in 19XX 
-\citep{Bag01}, is one of the most used correlation algorithms 
-in science. It is used ubiquitously in all field of science 
-ranging from agriculture to zoology. Examples of large scale 
-correlation matrices can be found in many areas of biology and 
-bioinformatics. Genotype correlation are commonly used to 
-construct haplotypes, build genetic maps, and order markers 
-within the genome. Furthermore, PCCs have been used in (genome 
-wide) association analysis, and novel algortihms to reconstruct 
-genetic networks such as correlated trait locus (CTL) mapping. 
-Many online databases such as 
-GeneNetwork (\href{https://genenetwork.org/}{https://genenetwork.org/}) 
-or the 
-Mouse Gene Expression Database (GXD) (\href{https://informatics.jax.org/}{https://informatics.jax.org/})
-provide large amounts of phenotype and gene expression data as 
-well as online analysis tools to compute PCCs between e.g. 
-gene expression within or between different tissues.\par
+Biology has driven innovation in statistics from the early days. Pearson, Fischer 
+and Galton other famous statisticians were all working on biological data. The 
+mathematical formula for Pearson correlation were derived by Auguste Bravais in 
+1844. However, as Stigler's Law \citep{Stigler1980} dictates the methods name is 
+crediting Karl Pearson, who was building on ideas published by Francis Galton in 
+the 1880s. 
 
-The cor() function available in R, is implemented in C / C++ and 
+Pearson correlation is one of the most used correlation algorithms in science. 
+It is used ubiquitously in all field of science ranging from agriculture to 
+zoology. Examples of large scale correlation computation can be found in many 
+areas of biology and bioinformatics. Genotype correlation are commonly used to 
+construct haplotypes, build genetic maps, and order markers within the genome. 
+Furthermore, PCCs have been used in co-expression analysis \citep{Tesson:2010}, 
+(genome wide) association analysis, and novel algortihms to reconstruct genetic 
+networks such as DiffCor \citep{Fukushima:2013}, weighted correlation network 
+analysis (WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL) mapping 
+\citep{Arends2016a}.
+
+Many online databases such as GeneNetwork 
+(\href{https://genenetwork.org/}{https://genenetwork.org/}) \citep{Sloan2016} or 
+the Mouse Gene Expression Database (GXD) 
+(\href{https://informatics.jax.org/}{https://informatics.jax.org/}) \citep{Finger2017}
+provide large amounts of genotype, classical phenotype, and gene expression data as 
+well as online analysis tools such as PCCs.
+
+PCCs computation in the R language for statistical computing \citep{R:2005} is 
+provided by the $cor()$ function. The computation is implemented in C / C++ and 
 is relatively performant when no missing data is present. However, 
 in the presence of missing data 5 different options on how-to deal 
 with missing data are provided. The main choices are ($complete.obs$), 
@@ -90,21 +98,17 @@ runtime of the computation.
 %\enlargethispage{12pt}
 
 \section{Approach}
-The correlaton algorithm was optimized, and binding to the commonly 
-used R language were created. The R function is a 'drop in' replacement 
-for the current cor() function.\par
-Benchmarks show that computation of correlations between 10k genetic 
-markers (genotypes) shows a 90 fold reduction in computational time 
-compared to the standard cor function available in the R language, as 
-such this new algorithm allows for larger datasets (30k x 30k) to be 
-analyzed, as well as speed up analysis on medium scale datasets 
-(1k x 1k).\par
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
-nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
-ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. Donec sollicitudin 
-convallis vehicula. Fusce id est ut neque blandit convallis eu eget 
-orci. Interdum et malesuada fames ac ante ipsum primis in faucibus. 
+We optimized the PCC algorithm by using matrix-matrix multiplication, 
+optimized CPU cache efficiency, and using the MKL \citep{Intel2007, Wang2014} 
+for optimal usage of intel CPU architecture, after which bindings to the R language 
+were created. The new R function is a 'drop in' replacement for the 
+$cor()$ function provided by R.
+
+Benchmarking showed that computing correlations between 10k genetic markers 
+(genotypes) shows a ~ 90 fold reduction in computational time compared to 
+the standard R $cor()$ function. This mean the algorithm presented here
+allows for larger datasets to be analyzed, as well as speed up analysis on 
+small to medium scale datasets.
 
 \begin{methods}
 \section{Methods}
@@ -195,13 +199,13 @@ eros a mattis.
 
 \section{Conclusion}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis.
+Driven by demands in large data biology we optimized correlations to
+a new level. We believe this is highly relevant for bioinformatics
+since so many tools use these statistics. A 100x speedup may sound
+modest until you realize it can mean getting diagnostics 100x
+faster, or use 1 computer instead of 100. Our version can be run
+from any computer languge, including R.
+
 
 \begin{enumerate}
 \item this is item, use enumerate
@@ -238,7 +242,7 @@ nunc, convallis congue efficitur ac, vestibulum sit amet magna.
 
 This work has been supported by the... Text Text  Text Text.\vspace*{-12pt}
 
-%\bibliographystyle{natbib}
+\bibliographystyle{natbib}
 %\bibliographystyle{achemnat}
 %\bibliographystyle{plainnat}
 %\bibliographystyle{abbrv}
@@ -246,41 +250,6 @@ This work has been supported by the... Text Text  Text Text.\vspace*{-12pt}
 %
 %\bibliographystyle{plain}
 %
-%\bibliography{Document}
+\bibliography{main}
 
-
-\begin{thebibliography}{}
-
-\bibitem[Bofelli {\it et~al}., 2000]{Boffelli03}
-Bofelli,F., Name2, Name3 (2003) Article title, {\it Journal Name}, {\bf 199}, 133-154.
-
-\bibitem[Bag {\it et~al}., 2001]{Bag01}
-Bag,M., Name2, Name3 (2001) Article title, {\it Journal Name}, {\bf 99}, 33-54.
-
-\bibitem[Yoo \textit{et~al}., 2003]{Yoo03}
-Yoo,M.S. \textit{et~al}. (2003) Oxidative stress regulated genes
-in nigral dopaminergic neurnol cell: correlation with the known
-pathology in Parkinson's disease. \textit{Brain Res. Mol. Brain
-Res.}, \textbf{110}(Suppl. 1), 76--84.
-
-\bibitem[Lehmann, 1986]{Leh86}
-Lehmann,E.L. (1986) Chapter title. \textit{Book Title}. Vol.~1, 2nd edn. Springer-Verlag, New York.
-
-\bibitem[Crenshaw and Jones, 2003]{Cre03}
-Crenshaw, B.,III, and Jones, W.B.,Jr (2003) The future of clinical
-cancer management: one tumor, one chip. \textit{Bioinformatics},
-doi:10.1093/bioinformatics/btn000.
-
-\bibitem[Auhtor \textit{et~al}. (2000)]{Aut00}
-Auhtor,A.B. \textit{et~al}. (2000) Chapter title. In Smith, A.C.
-(ed.), \textit{Book Title}, 2nd edn. Publisher, Location, Vol. 1, pp.
-???--???.
-
-\bibitem[Bardet, 1920]{Bar20}
-Bardet, G. (1920) Sur un syndrome d'obesite infantile avec
-polydactylie et retinite pigmentaire (contribution a l'etude des
-formes cliniques de l'obesite hypophysaire). PhD Thesis, name of
-institution, Paris, France.
-
-\end{thebibliography}
 \end{document}
