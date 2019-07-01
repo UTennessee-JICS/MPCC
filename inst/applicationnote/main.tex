@@ -61,7 +61,7 @@ available at \textit{Bioinformatics} online.}
 Biology has driven innovation in statistics from the early days. Pearson, Fischer 
 and Galton other famous statisticians were all working on biological data. The 
 mathematical formula for Pearson correlation were derived by Auguste Bravais in 
-1844. However, as Stigler's Law \citep{Stigler1980} dictates the methods name is 
+1844. However, as Stigler's Law \cite{Stigler1980} dictates the methods name is 
 crediting Karl Pearson, who was building on ideas published by Francis Galton in 
 the 1880s. 
 
@@ -82,44 +82,25 @@ the Mouse Gene Expression Database (GXD)
 (\href{https://informatics.jax.org/}{https://informatics.jax.org/}) \citep{Finger2017}
 provide large amounts of genotype, classical phenotype, and gene expression data as 
 well as online analysis tools such as PCCs. For these platforms, improvements in 
-PCC computation allow for reduced costs, and improved waiting time for users.
+PCC computation allow for reduced computational and hardware costs, and improved 
+response times for users.
 
 PCCs computation in the R language for statistical computing \citep{R:2005} is 
 provided by the $cor()$ function. The computation is implemented in C / C++ and 
 is relatively performant when no missing data is present. However, 
 in the presence of missing data 5 different options on how-to deal 
-with missing data are provided. The main choices are ($complete.obs$), 
-which removes all rows that contain missing data, essentially 
-creating a dataset without missing data. This is often unwanted in 
-bioinformatics because missing data is often omni-present in data 
-sets. The second main choice is the ($pairwise.complete.obs$) option, 
-which due to it's implementation causes branching on missing data. This
-leads to cache inefficiencies on the CPU, significanly increasing the 
-runtime of the computation.
+with missing data are provided. The main choices are removes all rows that 
+contain missing data, essentially creating a dataset without missing data. This is 
+unwanted in bioinformatics because missing data is often omni-present. 
+The second main choice is to handle missing data on a case by case basis. However, 
+due to the implementation this causes branching on missing data, leading to CPU 
+cache inefficiencies, significanly increasing the runtime of the computation.
 %\enlargethispage{12pt}
 
 \section{Approach}
-We optimized the PCC algorithm by using matrix-matrix multiplication, 
-optimized CPU cache efficiency, and using the MKL \citep{Intel2007, Wang2014} 
-for optimal usage of intel CPU architecture, after which bindings to the R language 
-were created. The new R function is a 'drop in' replacement for the 
-$cor()$ function provided by R.
-
-Benchmarking showed that computing correlations between 10k genetic markers 
-(genotypes) shows a ~ 90 fold reduction in computational time compared to 
-the standard R $cor()$ function. This mean the algorithm presented here
-allows for larger datasets to be analyzed, as well as speed up analysis on 
-small to medium scale datasets.
-
-\begin{methods}
-\section{Methods}
-
-We started with the naive version of the algorithm, a series of vector-vector 
-operations inside a double nested loop. We hand-tuned the naive version to the 
-maximum extent attainable. Additionally, we reformulated the problem into a series of 
-matrix-matrix operations. These operations call Intel’s Math Kernel Library (MKL) 
-directly. MKL comes, out of the box, tuned for high performance on emerging 
-Intel architectures.
+We optimized the PCC algorithm and created a 'drop in' replacement for the $cor()$ 
+function provided by R. Optimizations performed are itemized below, and further 
+explained in the methods section.
 
 \begin{itemize}
 \item Missing data masking
@@ -129,83 +110,59 @@ Intel architectures.
 \item Matrix implementation
 \end{itemize}
 
+Benchmarking showed that computing correlations between 10k genetic markers 
+(genotypes) shows an 90 fold reduction in computational time compared to 
+the standard R $cor()$ function. This mean the algorithm presented here
+allows for larger datasets to be analyzed, as well as speed up analysis on 
+small to medium scale datasets.
+
+\section{Availability}
+
+\begin{methods}
+\section{Methods}
+
+We started with the naive version (a slightly adjusted version compared to the R 
+implementation) of the algorithm, a series which consists of vector-vector 
+operations inside a double nested loop. The problem was reformulated into a 
+series of matrix-matrix operations.
+
+\subsection{Missing data masking}
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
 nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
 ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. Donec sollicitudin 
-convallis vehicula. Fusce id est ut neque blandit convallis eu eget 
-orci. Interdum et malesuada fames ac ante ipsum primis in faucibus. 
+nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
+\subsection{Memory access optimizations}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
+nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
+ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
+nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
-\subsection{This is subheading}
+\subsection{Threading}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
+nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
+ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
+nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
+\subsection{Vectorization}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
+nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
+ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
+nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
-\begin{table}[!t]
-\processtable{This is table caption\label{Tab:01}} {\begin{tabular}{@{}llll@{}}\toprule head1 &
-head2 & head3 & head4\\\midrule
-row1 & row1 & row1 & row1\\
-row2 & row2 & row2 & row2\\
-row3 & row3 & row3 & row3\\
-row4 & row4 & row4 & row4\\\botrule
-\end{tabular}}{This is a footnote}
-\end{table}
+\subsection{Matrix implementation}
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
+nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
+ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
+nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
 \end{methods}
-
-\begin{figure}[!tpb]%figure1
-\fboxsep=0pt\colorbox{gray}{\begin{minipage}[t]{235pt} \vbox to 100pt{\vfill\hbox to
-235pt{\hfill\fontsize{24pt}{24pt}\selectfont FPO\hfill}\vfill}
-\end{minipage}}
-%\centerline{\includegraphics{fig01.eps}}
-\caption{Caption, caption.}\label{fig:01}
-\end{figure}
-
-%\begin{figure}[!tpb]%figure2
-%%\centerline{\includegraphics{fig02.eps}}
-%\caption{Caption, caption.}\label{fig:02}
-%\end{figure}
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
-
-\subsection{This is subheading}
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
 
 \section{Discussion}
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
 rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
+nunc, convallis congue efficitur ac, vestibulum sit amet magna.
 
 \section{Conclusion}
 
@@ -215,51 +172,30 @@ use this application at large problem sizes. This is highly relevant for
 bioinformatics since so many tools use these statistics. A 100x speedup may sound
 modest, however, it means getting diagnostics 100x faster, or use 1 computer 
 instead of 100 significantly reducing costs. Our version can be run from any 
-computer languge, including R.
-
-\begin{enumerate}
-\item this is item, use enumerate
-\item this is item, use enumerate
-\item this is item, use enumerate
-\end{enumerate}
+computer language, including R.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
 rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
 nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
-
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. Duis sit 
-amet dictum odio, a rutrum ex. Mauris eu cursus lacus. Donec 
-lobortis non risus in blandit. Phasellus pellentesque molestie 
-eros a mattis. 
-
+Aliquam ut diam sagittis, tempor mi eu, egestas libero.
 
 \section*{Acknowledgements}
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna.
+rhoncus ex vel enim volutpat, non volutpat est aliquam.
 \vspace*{-12pt}
 
 \section*{Funding}
 
 This work has been supported by the... Text Text  Text Text.\vspace*{-12pt}
 
-\bibliographystyle{natbib}
+%\bibliographystyle{natbib}
 %\bibliographystyle{achemnat}
 %\bibliographystyle{plainnat}
 %\bibliographystyle{abbrv}
 %\bibliographystyle{bioinformatics}
-%
-%\bibliographystyle{plain}
-%
+
+\bibliographystyle{plain}
 \bibliography{main}
 
 \end{document}
