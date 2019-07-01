@@ -7,7 +7,7 @@
 \begin{document}
 \firstpage{1}
 
-\subtitle{High-performance Computing}
+\subtitle{Genetic and population analysis}
 
 \title[MPCC]{Matrix Pearson Correlation Coefficients (MPCC) - An R Package for Performant Computation of Pearson Correlations with Missing Data Support}
 \author[Arends \textit{et~al}.]{
@@ -81,7 +81,8 @@ Many online databases such as GeneNetwork
 the Mouse Gene Expression Database (GXD) 
 (\href{https://informatics.jax.org/}{https://informatics.jax.org/}) \citep{Finger2017}
 provide large amounts of genotype, classical phenotype, and gene expression data as 
-well as online analysis tools such as PCCs.
+well as online analysis tools such as PCCs. For these platforms, improvements in 
+PCC computation allow for reduced costs, and improved waiting time for users.
 
 PCCs computation in the R language for statistical computing \citep{R:2005} is 
 provided by the $cor()$ function. The computation is implemented in C / C++ and 
@@ -113,18 +114,27 @@ small to medium scale datasets.
 \begin{methods}
 \section{Methods}
 
+We started with the naive version of the algorithm, a series of vector-vector 
+operations inside a double nested loop. We hand-tuned the naive version to the 
+maximum extent attainable. Additionally, we reformulated the problem into a series of 
+matrix-matrix operations. These operations call Intel’s Math Kernel Library (MKL) 
+directly. MKL comes, out of the box, tuned for high performance on emerging 
+Intel architectures.
+
+\begin{itemize}
+\item Missing data masking
+\item Memory access optimizations
+\item Threading
+\item Vectorization
+\item Matrix implementation
+\end{itemize}
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
 nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
 ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
 nisl, aliquam vel faucibus ac, dapibus ut nisl. Donec sollicitudin 
 convallis vehicula. Fusce id est ut neque blandit convallis eu eget 
 orci. Interdum et malesuada fames ac ante ipsum primis in faucibus. 
-
-\begin{itemize}
-\item for bulleted list, use itemize
-\item for bulleted list, use itemize
-\item for bulleted list, use itemize\vspace*{1pt}
-\end{itemize}
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
 rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
@@ -199,13 +209,13 @@ eros a mattis.
 
 \section{Conclusion}
 
-Driven by demands in large data biology we optimized correlations to
-a new level. We believe this is highly relevant for bioinformatics
-since so many tools use these statistics. A 100x speedup may sound
-modest until you realize it can mean getting diagnostics 100x
-faster, or use 1 computer instead of 100. Our version can be run
-from any computer languge, including R.
-
+Driven by demands in large data biology we optimized correlations to a new level. 
+The MPCC algorithm will greatly reduce the bottleneck for many fields aiming to 
+use this application at large problem sizes. This is highly relevant for 
+bioinformatics since so many tools use these statistics. A 100x speedup may sound
+modest, however, it means getting diagnostics 100x faster, or use 1 computer 
+instead of 100 significantly reducing costs. Our version can be run from any 
+computer languge, including R.
 
 \begin{enumerate}
 \item this is item, use enumerate
