@@ -58,12 +58,11 @@ available at \textit{Bioinformatics} online.}
 \maketitle
 
 \section{Introduction}
-Biology has driven innovation in statistics from the early days. Pearson, Fischer 
-and Galton other famous statisticians were all working on biological data. The 
-mathematical formula for Pearson correlation were derived by Auguste Bravais in 
-1844. However, as Stigler's Law \cite{Stigler1980} dictates the methods name is 
-crediting Karl Pearson, who was building on ideas published by Francis Galton in 
-the 1880s. 
+Biology has driven innovation in statistics from the early days. Pearson, Fischer, Galton, 
+and many other famous statisticians were all working on biological data. The mathematical 
+formula for Pearson correlation were derived by Auguste Bravais in 1844. However, as 
+Stigler's Law \cite{Stigler1980} dictates the methods name is crediting Karl Pearson, who 
+was building on ideas published by Francis Galton in the 1880s. 
 
 Pearson correlation is one of the most used correlation algorithms in science. 
 It is used ubiquitously in all field of science ranging from agriculture to 
@@ -76,14 +75,11 @@ networks such as DiffCor \citep{Fukushima:2013}, weighted correlation network
 analysis (WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL) mapping 
 \citep{Arends2016a}.
 
-Many online databases such as GeneNetwork 
-(\href{https://genenetwork.org/}{https://genenetwork.org/}) \citep{Sloan2016} or 
-the Mouse Gene Expression Database (GXD) 
-(\href{https://informatics.jax.org/}{https://informatics.jax.org/}) \citep{Finger2017}
-provide large amounts of genotype, classical phenotype, and gene expression data as 
-well as online analysis tools such as PCCs. For these platforms, improvements in 
-PCC computation allow for reduced computational and hardware costs, and improved 
-response times for users.
+The BxD family currently consists of 150 inbred mice, and the BxD phenome consists 
+of 7000 hand curated and well-integrated classical phenotypes, and over 100 'omics' 
+datasets. Almost all BXD expression and phenotype data is freely available on 
+\href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}, which provides 
+powerful statistical tools for data analysis, including Pearson correlation.
 
 PCCs computation in the R language for statistical computing \citep{R:2005} is 
 provided by the $cor()$ function. The computation is implemented in C / C++ and 
@@ -109,14 +105,6 @@ explained in the methods section.
 \item Vectorization
 \item Matrix implementation
 \end{itemize}
-
-Benchmarking showed that computing correlations between 10k genetic markers 
-(genotypes) shows an 90 fold reduction in computational time compared to 
-the standard R $cor()$ function. This mean the algorithm presented here
-allows for larger datasets to be analyzed, as well as speed up analysis on 
-small to medium scale datasets.
-
-\section{Availability}
 
 \begin{methods}
 \section{Methods}
@@ -156,6 +144,31 @@ nibh pulvinar, ultricies sapien eget, consectetur massa. In augue
 ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
 nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
+\subsection{Benchmark on BxD recombinant inbred lines}
+Data of N phenotypes was extracted from GeneNetwork, together with 
+X gene extression datasets, and the recently update genotypes for 
+the BxD family. PCC within and between gene expression datasets are 
+computed to build networks of co-expressed genes. PCC between 
+classical phenotypes and gene expression is commonly used to 
+indentify genes which might be involved in phenotype regulation. 
+Correlation between genotypes is used to build genetic maps and 
+build haplotypes. We benchmarked two different scenarios to show 
+the improvement of MPCC over the R $cor()$ function.
+
+{\bf Scenario 1:} Computation of PCC between all available genotypes 
+in the BxD strain. Since genotype data in the BxD family is almost 
+complete data, with only a few heterozygous (missing) loci remaining, 
+this scenario benchmarks MPCC versus $cor()$ when a limited amount of 
+missing data is present (Fig 1a).
+
+{\bf Scenario 2:} Computation of PCC between classical phenotypes and 
+multiple gene expression data sets available in GeneNetwork. This 
+benchmark scenario compared MPCC versus $cor()$ in the presence of 
+a lot of missing data since phenotypes are measured on a limited set 
+of strains. Gene expression datasets are added in a step-wise fashion 
+to increase the computational requirements in a step-wise fashion 
+(Fig 1b).
+
 \end{methods}
 
 \section{Discussion}
@@ -189,13 +202,13 @@ rhoncus ex vel enim volutpat, non volutpat est aliquam.
 
 This work has been supported by the... Text Text  Text Text.\vspace*{-12pt}
 
-%\bibliographystyle{natbib}
+\bibliographystyle{natbib}
 %\bibliographystyle{achemnat}
 %\bibliographystyle{plainnat}
 %\bibliographystyle{abbrv}
 %\bibliographystyle{bioinformatics}
 
-\bibliographystyle{plain}
+%\bibliographystyle{plain}
 \bibliography{main}
 
 \end{document}
