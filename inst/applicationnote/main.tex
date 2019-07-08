@@ -9,7 +9,7 @@
 
 \subtitle{Genetic and population analysis}
 
-\title[MPCC]{Matrix Pearson Correlation Coefficients (MPCC) - An R Package for Performant Computation of Pearson Correlations with Missing Data Support}
+\title[MPCC]{A Performant Matrix of Pearson's Correlation Coefficient (MPCC) Calculations with Missing Data Support}
 \author[Arends \textit{et~al}.]{
 Danny Arends\,$^{\text{\sfb 1, $\dagger$}}$, 
 Mitch Horton\,$^{\text{\sfb 2, $\dagger$}}$ 
@@ -34,19 +34,23 @@ addressed.}
 
 \editor{Associate Editor: XXXXXXX}
 
-\abstract{\textbf{Motivation:} Pearons correlation coefficients (PCC) 
-is one of the most used correlation algorithms. However, computational 
-efficiency of current implementations is low when computing many 
-PCCs in the presence of missing data. This work was undertaken to 
-improve the performance of PCC computation and allow the algorithm 
-to be used on large biological data set currently available in the 
-field of bioinformatics and computational biology.\\
-\textbf{Results:} In this paper we present an C++ algorithm for fast 
-computation of PCCs using matrix multiplication and vectorization. 
-The implementation is independant of the amount of missing data 
-present. Benchmarks againt the $cor()$ function available in the R show 
-that our package sigificantly reduces the runtime with up to 90 fold 
-reduction in computational time on a single machine.\\
+\abstract{\textbf{Motivation:} 
+The motivation for this work is a bioinformatics application 
+(GeneNetwork.org) which performs a matrix of Pearson$'$s 
+Correlation Coefficient (PCC) calculations with missing data 
+support to find relationships between and among genotypes 
+and phenotypes in mouse strains. The calculations are a 
+bottleneck in the application for moderate to large problem 
+sizes. Calculating the PCC is pervasive across bioinformatics, 
+data analysis, phylogenetics, statistics, stochastics, and 
+xanthropology. Our approach can be used anywhere a matrix of PCC 
+calculations is computed. \\
+\textbf{Results:} Our solution is a reformulation of the algorithm such that it is 
+based on the matrix-matrix product algorithm and achieves 4.3 TFlop/s in single 
+precision (77\% of the theoretical peak) on a single 
+Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) compute node. This 
+translates to as much as a 90x speedup over the previous approach and 
+is independent of the percentage of missing data. \\
 \textbf{Availability:} Code is available under an GPL-v3 
 licence for C++ and The R Project for Statistical 
 Computing at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
