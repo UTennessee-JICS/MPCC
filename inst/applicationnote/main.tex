@@ -35,22 +35,21 @@ addressed.}
 \editor{Associate Editor: XXXXXXX}
 
 \abstract{\textbf{Motivation:} 
-The motivation for this work is a bioinformatics application 
-(GeneNetwork.org) which performs a matrix of Pearson$'$s 
-Correlation Coefficient (PCC) calculations with missing data 
-support to find relationships between and among genotypes 
-and phenotypes in mouse strains. The calculations are a 
-bottleneck in the application for moderate to large problem 
-sizes. Calculating the PCC is pervasive across bioinformatics, 
-data analysis, phylogenetics, statistics, stochastics, and 
-xanthropology. Our approach can be used anywhere a matrix of PCC 
-calculations is computed. \\
-\textbf{Results:} Our solution is a reformulation of the algorithm such that it is 
-based on the matrix-matrix product algorithm and achieves 4.3 TFlop/s in single 
-precision (77\% of the theoretical peak) on a single 
-Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) compute node. This 
-translates to as much as a 90x speedup over the previous approach and 
-is independent of the percentage of missing data. \\
+The work presented is motivated by GeneNetwork.org, which performs 
+a matrix of Pearson$'$s Correlation Coefficient (PCC) calculations 
+in the presence of missing data to find relationships between and 
+among genotypes and phenotypes in mouse strains. The calculations 
+are a bottleneck for moderate to large problem sizes. Calculating 
+PCC is pervasive across bioinformatics, data analysis, 
+phylogenetics, statistics, stochastics, and xanthropology. Our 
+approach can be used anywhere a matrix of PCC calculations is 
+computed.\\
+\textbf{Results:} Our solution is a reformulation of the algorithm 
+such that it is based on the matrix-matrix product algorithm and 
+achieves 4.3 TFlop/s in single precision (77\% of the theoretical 
+peak) on a single Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) 
+compute node. This translates to as much as a 90x speedup over the 
+previous approach and is independent of the percentage of missing data. \\
 \textbf{Availability:} Code is available under an GPL-v3 
 licence for C++ and The R Project for Statistical 
 Computing at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
