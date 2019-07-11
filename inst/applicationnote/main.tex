@@ -1,4 +1,7 @@
 \documentclass{bioinfo}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
 \copyrightyear{2019} \pubyear{2019}
 
 \access{Advance Access Publication Date: Day Month 2019}
@@ -70,6 +73,8 @@ However, as Stigler's Law \citep{Stigler1980} dictates the name
 of the method is crediting Karl Pearson, who was building on 
 ideas published by Francis Galton in the 1880s. 
 
+%\enlargethispage{12pt}
+
 Pearson correlation is one of the most used correlation algorithms in science. 
 It is used ubiquitously in all field of science ranging from agriculture to 
 zoology. Examples of large scale correlation computation can be found in many 
@@ -97,58 +102,67 @@ unwanted in bioinformatics because missing data is often omni-present.
 The second main choice is to handle missing data on a case by case basis. However, 
 due to the implementation this causes branching on missing data, leading to CPU 
 cache inefficiencies, significanly increasing the runtime of the computation.
-%\enlargethispage{12pt}
 
 \section{Approach}
-We optimized the PCC algorithm and created a 'drop in' replacement for the $cor()$ 
+We reformulated the naive version of the PCC algorithm into a series of 
+matrix-matrix products and element-wise matrix operations. The 
+reformulated algorithm is called the matrix version. The matrix version 
+R interface is designed as a 'drop in' replacement for the $cor()$ 
 function provided by R. Optimizations performed are itemized below, and further 
 explained in the methods section.
 
-\begin{itemize}
-\item Missing data masking
-\item Memory access optimizations
-\item Threading
-\item Vectorization
-\item Matrix implementation
-\end{itemize}
+\subsection{Pearson$'$s Correlation Coefficient Calculation}
+When we say Pearson$'$s correlation coefficient, we mean:
+
+\begin{equation}
+%r=\frac{n\sum x_iy_i-\sum x_i\sum y_i}{((n\sum x_i^2-(\sum x_i)^2)(n\sum y_i^2-(\sum y_i)^2)^(1/2)}
+r=\frac{n\sum x_iy_i-\sum x_i\sum y_i}{((n\sum x_i^2-(\sum x_i)^2)(n\sum x_i^2-(\sum y_i)^2))}
+\end{equation}
+where $x$ and $y$ are vectors of length $n$, and $r$ is a real number between -1 and 1 inclusive.
+
+\subsection{The Naive Version}
+
+Given $A$, an arbitrary number of vectors of length $n$, and $B$, an arbitrary number of vectors of length $n$, 
+we define the naive version like so:
+
+\vspace{2mm}
+
+\begin{algorithmic}[0]
+\FOR{Each vector  $i$ in set of vectors $A$}
+  \FOR{Each vector  $j$ in set of vectors $B$}
+    \STATE $m=n$
+    \STATE $SA_{ij}=SAA_{ij}=SB_{ij}=SBB_{ij}=SAB_{ij}=0$
+    \FOR{Each element $k$  in vectors $i$ and $j$}
+      \IF{element $k$ in vectors $i$ or $j$ missing}
+        \STATE Decrement vector length: $m=m-1$
+      \ELSE
+        \STATE $SA_{ij}+=A_{ik}$
+        \STATE $SB_{ij}+=B_{jk}$
+        \STATE $SAA_{ij}+=A_{ik}A_{ik}$
+        \STATE $SBB_{ij}+=B_{jk}B_{jk}$
+        \STATE $SAB_{ij}+=A_{ik}B_{jk}$
+      \ENDIF
+    \ENDFOR 
+    \STATE $R_{ij}=\frac{mSAB_{ij}-SA_{ij}SB_{ij}}{((mSAA_{ij}-(SA_{ij}SA_{ij})(mSBB_{ij}-(SB_{ij}SB_{ij}))}$
+  \ENDFOR
+\ENDFOR
+\end{algorithmic}
+
+\vspace{2mm}
+
+\noindent where $SA_{ij}$ is the sum of the elements of vector $i$ in $A$, 
+$SAA_{ij}$ is the sum of the elements squared of vector $i$ in $A$, 
+$SB_{ij}$ is the sum of the elements of vector $j$ in $B$, 
+$SBB_{ij}$ is the sum of the elements squared of vector $j$ in $B$, 
+$SAB_{ij}$ is the sum of the elements of vector $i$ in $A$ times the  elements of vector $j$ in $B$, 
+and $R_ij$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
+
+\subsection{The Matrix Version}
+
+\subsection{Missing Data Bit-masking}
 
 \begin{methods}
 \section{Methods}
-
-We started with the naive version (a slightly adjusted version compared to the R 
-implementation) of the algorithm, a series which consists of vector-vector 
-operations inside a double nested loop. The problem was reformulated into a 
-series of matrix-matrix operations.
-
-\subsection{Missing data masking}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
-nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
-ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. 
-
-\subsection{Memory access optimizations}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
-nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
-ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. 
-
-\subsection{Threading}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
-nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
-ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. 
-
-\subsection{Vectorization}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
-nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
-ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. 
-
-\subsection{Matrix implementation}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer a 
-nibh pulvinar, ultricies sapien eget, consectetur massa. In augue 
-ante, iaculis et justo et, imperdiet consectetur nisl. In magna 
-nisl, aliquam vel faucibus ac, dapibus ut nisl. 
 
 \subsection{Benchmark on BxD recombinant inbred lines}
 Data of N phenotypes was extracted from GeneNetwork, together with 
@@ -176,6 +190,8 @@ to increase the computational requirements in a step-wise fashion
 (Fig 1b).
 
 \end{methods}
+
+\section{Results}
 
 \section{Discussion}
 
