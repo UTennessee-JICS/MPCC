@@ -127,7 +127,7 @@ we define the naive version like so:
 
 \vspace{2mm}
 
-\begin{algorithmic}[0]
+\begin{algorithmic}[1]
 \FOR{Each vector  $i$ in set of vectors $A$}
   \FOR{Each vector  $j$ in set of vectors $B$}
     \STATE $m=n$
@@ -161,41 +161,55 @@ and $R_ij$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
   
 \vspace{2mm}
 
-\begin{algorithmic}[0]
+\begin{algorithmic}[1]
 
-  \STATE $\sum A=\text{SGEMM(}A,U_B\text{)}$
-  \STATE $\sum A^2=\text{SGEMM(}A^2,U_B\text{)}$
-  \STATE $\sum B=\text{SGEMM(}B,U_A\text{)}$
-  \STATE $\sum B^2=\text{SGEMM(}B^2,U_A\text{)}$
-  \STATE $\sum AB=\text{SGEMM(}A,B\text{)}$
+  \STATE $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$
+  \STATE $\sum A^2=\text{SGEMM(}A_Z^2,U_B\text{)}$
+  \STATE $\sum B=\text{SGEMM(}B_Z,U_A\text{)}$
+  \STATE $\sum B^2=\text{SGEMM(}B_Z^2,U_A\text{)}$
+  \STATE $\sum AB=\text{SGEMM(}A_Z,B_Z\text{)}$
   
   \vspace{2mm}
 
-  \STATE Compute $M\sum A^2$ Element-wise multiplication
-  \STATE Compute $M\sum B^2$ Element-wise multiplication
-  \STATE Compute $M\sum AB$ Element-wise multiplication
+  \STATE Compute $M\sum A^2$   (Element-wise multiplication)
+  \STATE Compute $M\sum B^2$   (Element-wise multiplication)
+  \STATE Compute $M\sum AB$   (Element-wise multiplication)
   
   \vspace{2mm}
 
-  \STATE $N_0=M\sum AB - \sum A\sum B$ Element-wise subtraction
-  \STATE $D_0=M\sum A^2 - \sum A\sum A$ Element-wise subtraction
-  \STATE $D_1=M\sum B^2 - \sum B\sum B$ Element-wise subtraction
+  \STATE $N_0=M\sum AB - \sum A\sum B$   (Element-wise subtraction)
+  \STATE $D_0=M\sum A^2 - \sum A\sum A$   (Element-wise subtraction)
+  \STATE $D_1=M\sum B^2 - \sum B\sum B$   (Element-wise subtraction)
 
   \vspace{2mm}
 
-  \STATE $D_2=D_0 D_1 $ Element-wise multiplication
-  \STATE $D_3=\text{SQRT(}D_2\text{)}$ Element-wise square root
+  \STATE $D_2=D_0 D_1 $   (Element-wise multiplication)
+  \STATE $D_3=\text{SQRT(}D_2\text{)}$   (Element-wise square root)
 
   \vspace{2mm}
 
-  \STATE $P=N_0 / D_3$ Element-wise division
+  \STATE $P=N_0 / D_3$   (Element-wise division)
   
 \end{algorithmic}
 
 \vspace{2mm}
 
-\noindent where $P$ is a matrix of PCC calculations.
+\noindent where  $A_Z$ is the set of vectors $A$ with a zero at every 
+missing data location, $A_Z^2$ is the result of squaring every element 
+of $A_Z$, $B_Z$ is the set of vectors $B$ with a zero at every 
+missing data location, $B_Z^2$ is the result of squaring every element 
+of $B_Z$, $M$ is a matrix whose $i, j$-th element is the number of 
+elements in the $i$-th vector of $A$, and the $j$-th vector of $B$ 
+such that there is no missing data in either $A$ or $B$, and $P$ is 
+a matrix of PCC calculations. All the other variables are self explanatory.
+
 \subsection{Missing Data Bit-masking}
+
+To generate $M$ above, a bitmask for each vector in $A$ and for each vector in $B$, 
+is first initialized to all zeros then set to one in every position where there is missing data.
+Then, to find the number of positions where there is no missing data for a given vector $i$ 
+in $A$ and $j$ in $B$, a bitwise OR is done between the the corresponding bitmasks, and the 
+the number of zeros in the result is the size of the PCC calculation for those two vectors.  
 
 \begin{methods}
 \section{Methods}
