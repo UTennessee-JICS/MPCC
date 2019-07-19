@@ -104,13 +104,12 @@ data is often omnipresent. Strategy 2 handles missing data on a case by case
 basis. However, this strategy causes CPU branching on missing data, leading to 
 cache and branch prediction inefficiencies, significanly increasing runtime.
 
-An additional issue with the $cor()$ function provided in R is the inability to 
-use multi-threading capabilities provided by modern CPU hardware. This limitation 
-can be overcome by external libraries provided by the $parallel$ library. This 
-library was created out of CRAN packages $multicore$ \citep{Urbanek2009} and 
-SNOW \citep{Tierney2003}. The current implementation of the $parallel$ library 
-starts up a new R instance for each thread, adding significant overhead to 
-multi-threaded computations.
+An additional issue with the $cor()$ function is the inability to use 
+multi-threading capabilities provided by modern CPU hardware. This limitation 
+can be overcome by using the $parallel$ library. This library was created 
+out of CRAN packages $multicore$ \citep{Urbanek2009} and SNOW \citep{Tierney2003}. 
+The current implementation of the $parallel$ library starts up a new R instance 
+for each thread, adding significant overhead to multi-threaded computations.
 
 \vspace*{-6pt}
 
