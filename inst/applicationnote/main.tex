@@ -101,13 +101,29 @@ contain missing data, essentially creating a dataset without missing data. This 
 unwanted in bioinformatics because missing data is often omnipresent. 
 The second main choice is to handle missing data on a case by case basis. However, 
 due to the implementation this causes branching on missing data, leading to CPU 
-cache inefficiencies, significanly increasing the runtime of the computation. \vspace*{-6pt}
+cache inefficiencies, significanly increasing the runtime of the computation. 
+
+An additional issue with the $cor()$ function provided in R is the inability to 
+use multi-threading capabilities provided by modern CPU hardware. This limitation 
+can be overcome by external libraries provided by the $parallel$ library. This 
+library was created out of CRAN packages $multicore$ \citep{Urbanek2009} and 
+SNOW \citep{Tierney2003}. The current implementation of the $parallel$ library 
+starts up a new R instance for each thread, adding significant overhead to 
+multi-threaded computations.
+
+\vspace*{-6pt}
 
 \section{Approach}
-We reformulated the naive version of the PCC algorithm into a series of 
+First, a naive version of the PCC algorithm was developed. The naive version is 
+identical to the R $cor()$ function but with added modern multi-threading 
+support provided by OpenMP. Unlike the $parallel$ library, OpenMP allows 
+multi-threading without the need to start additional R sessions, thus removing 
+this additional overhead.
+
+Secondly, we reformulated the naive version of the PCC algorithm into a series of 
 matrix-matrix products and element-wise matrix operations. The 
 reformulated algorithm is called the matrix version. The matrix version 
-R interface is designed as a 'drop in' replacement for the $cor()$ 
+R interface is designed as a drop-in replacement for the $cor()$ 
 function provided by R. Optimizations performed are itemized below, and further 
 explained in the methods section.
 
@@ -245,15 +261,21 @@ GeneNetwork repository, \href{https://genenetwork.org/}{GeneNetwork.org}
 \end{methods} \vspace*{-6pt}
 
 \section{Results}
+The Naive version leverages a modern multi-threading OpenMP approach 
+to improve performance in comparison to the $cor()$ function provided 
+in R providing a consistent ~ 3.5x speedup (56 core Intel Xeon E5-2680 
+v4 $@$ 2.40GHz - data not shown). The Naive version allows to 
+benchmark improvements gained by the Matrix version without having to 
+compensate for the absence of multi-threading support in the R 
+$cor()$ function.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero. \vspace*{-6pt}
+\vspace*{-6pt}
 
 \section{Discussion}
+The Naive version leverages a modern multi-threading OpenMP approach 
+to improve performance in comparison to the R $cor()$ function.
 
-Our approach heavily leverages the Intel\textregistered{} Math Kernel 
+The Matrix version heavily leverages the Intel\textregistered{} Math Kernel 
 Library (Intel\textregistered{} MKL) to obtain maximum performance 
 on Intel\textregistered{} systems. However, the advantages of the 
 matrix version are due to reduced computational complexity, and as 
