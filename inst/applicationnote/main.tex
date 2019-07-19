@@ -12,7 +12,7 @@
 
 \subtitle{Genetic and population analysis}
 
-\title[MPCC]{A Performant Matrix of Pearson's Correlation Coefficient (MPCC) Calculations with Missing Data Support}
+\title[MPCC]{A Performant Matrix of Pearson$'$s Correlation Coefficient (MPCC) Calculations with Missing Data Support}
 \author[Arends \textit{et~al}.]{
 Danny Arends\,$^{\text{\sfb 1, $\dagger$}}$, 
 Mitch Horton\,$^{\text{\sfb 2, $\dagger$}}$ 
@@ -51,7 +51,7 @@ computed.\\
 such that it can be solved using matrix-matrix products and 
 achieves 4.3 TFlop/s in single precision (77\% of the theoretical 
 peak) on a single Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) 
-compute node. This translates to as much as a 90x speedup over the 
+compute node. This translates to as much as a 100x speedup over the 
 previous approach and is independent of the percentage of missing 
 data.\\
 \textbf{Availability:} Code is available under an GPL-v3 
@@ -68,14 +68,14 @@ available at \textit{Bioinformatics} online.}
 Biology has driven innovation in statistics from the early days. 
 Pearson, Fischer, Galton, and many other now famous statisticians 
 were all working on biological data. The mathematical formula 
-for Pearson correlation were derived by Auguste Bravais in 1844. 
+for Pearson$'$s correlation were derived by Auguste Bravais in 1844. 
 However, as Stigler's Law \citep{Stigler1980} dictates the name 
 of the method is crediting Karl Pearson, who was building on 
 ideas published by Francis Galton in the 1880s. 
 
 %\enlargethispage{12pt}
 
-Pearson correlation is one of the most used correlation algorithms in science. 
+Pearson$'$s correlation is one of the most used correlation algorithms in science. 
 It is used ubiquitously in all field of science ranging from agriculture to 
 zoology. Examples of large scale correlation computation can be found in many 
 areas of biology and bioinformatics. Genotype correlation are commonly used to 
@@ -90,7 +90,7 @@ The BxD family currently consists of 150 inbred mice, and the BxD phenome consis
 of 7000 hand curated and well-integrated classical phenotypes, and over 100 'omics' 
 datasets. Almost all BXD expression and phenotype data is freely available on 
 \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}, which provides 
-powerful statistical tools for data analysis, including Pearson correlation.
+powerful statistical tools for data analysis, including Pearson$'$s correlation.
 
 PCCs computation in the R language for statistical computing \citep{R:2005} is 
 provided by the $cor()$ function. The computation is implemented in C / C++ and 
@@ -98,10 +98,10 @@ is relatively performant when no missing data is present. However,
 in the presence of missing data 5 different options on how-to deal 
 with missing data are provided. The main choices are removes all rows that 
 contain missing data, essentially creating a dataset without missing data. This is 
-unwanted in bioinformatics because missing data is often omni-present. 
+unwanted in bioinformatics because missing data is often omnipresent. 
 The second main choice is to handle missing data on a case by case basis. However, 
 due to the implementation this causes branching on missing data, leading to CPU 
-cache inefficiencies, significanly increasing the runtime of the computation.
+cache inefficiencies, significanly increasing the runtime of the computation. \vspace*{-6pt}
 
 \section{Approach}
 We reformulated the naive version of the PCC algorithm into a series of 
@@ -201,15 +201,15 @@ missing data location, $B_Z^2$ is the result of squaring every element
 of $B_Z$, $M$ is a matrix whose $i, j$-th element is the number of 
 elements in the $i$-th vector of $A$, and the $j$-th vector of $B$ 
 such that there is no missing data in either $A$ or $B$, and $P$ is 
-a matrix of PCC calculations. All the other variables are self explanatory.
+a matrix of PCC calculations. All the other variables are self explanatory. \vspace*{-6pt}
 
-\subsection{Missing Data Bit-masking}
+\subsection{Missing Data Bit-masking} \label{MDBM}
 
 To generate $M$ above, a bitmask for each vector in $A$ and for each vector in $B$, 
 is first initialized to all zeros then set to one in every position where there is missing data.
 Then, to find the number of positions where there is no missing data for a given vector $i$ 
 in $A$ and $j$ in $B$, a bitwise OR is done between the the corresponding bitmasks, and the 
-the number of zeros in the result is the size of the PCC calculation for those two vectors.  
+the number of zeros in the result is the size of the PCC calculation for those two vectors. \vspace*{-12pt}
 
 \begin{methods}
 \section{Methods}
@@ -239,40 +239,61 @@ of strains. Gene expression datasets are added in a step-wise fashion
 to increase the computational requirements in a step-wise fashion 
 (Fig 1b).
 
-\end{methods}
+The datasets analyzed during the current study are freely available in the 
+GeneNetwork repository, \href{https://genenetwork.org/}{GeneNetwork.org}
+
+\end{methods} \vspace*{-6pt}
 
 \section{Results}
-
-\section{Discussion}
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
-nunc, convallis congue efficitur ac, vestibulum sit amet magna.
-
-\section{Conclusion}
-
-Driven by demands in large data biology we optimized correlations to a new level. 
-The MPCC algorithm will greatly reduce the bottleneck for many fields aiming to 
-use this application at large problem sizes. This is highly relevant for 
-bioinformatics since so many tools use these statistics. A 100x speedup may sound
-modest, however, it means getting diagnostics 100x faster, or use 1 computer 
-instead of 100 significantly reducing costs. Our version can be run from any 
-computer language, including R.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
 rhoncus ex vel enim volutpat, non volutpat est aliquam. Nullam est 
 nunc, convallis congue efficitur ac, vestibulum sit amet magna. 
-Aliquam ut diam sagittis, tempor mi eu, egestas libero.
+Aliquam ut diam sagittis, tempor mi eu, egestas libero. \vspace*{-6pt}
 
-\section*{Acknowledgements}
+\section{Discussion}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent 
-rhoncus ex vel enim volutpat, non volutpat est aliquam.
-\vspace*{-12pt}
+Our approach heavily leverages the Intel\textregistered{} Math Kernel 
+Library (Intel\textregistered{} MKL) to obtain maximum performance 
+on Intel\textregistered{} systems. However, the advantages of the 
+matrix version are due to reduced computational complexity, and as 
+such independent of the underlying Basic Linear Algebra Subprograms 
+(BLAS) implementation used.
+
+Current work on the R-package is focused on using the OpenBLAS 
+library to provide a Free and Open-Source Software (FOSS) 
+alternative to the Intel\textregistered{} MKL. Future work will 
+investigate the feasibility of a GPU implementation to allow 
+for additional performance improvements.
+
+The missing data bit-masking approach outlined in section \ref{MDBM} 
+is implemented in C, and can be trivially generalized to other 
+algorithms which rely on matrix-matrix multiplication. \vspace*{-12pt}
+
+\section{Conclusion}
+
+Driven by demands in large data biology we optimized computation of Pearson$'$s 
+correlations to a new level. The MPCC algorithm will greatly reduce the 
+existing bottlenecks for many fields aiming to use this application at large 
+problem sizes. This is highly relevant for bioinformatics since so many 
+tools use Pearson$'$s correlations. 
+
+Additionally, the matrix version of the algorithm is unaffected by the 
+amount of missing data present in the data, a common problem in many 
+bioinformatics applications since missing data is ubiquitous and often 
+leads to reduced performance.
+
+A 100x speedup may sound modest, however, it means getting diagnostics 100x 
+faster, or use 1 computer instead of 100 significantly reducing costs for 
+computation. Our version can be used by any computer language which allows 
+calling C code. Furthermore, we provide an R package with a drop-in replacement 
+for the $cor()$ function in R.
 
 \section*{Funding}
 
-This work has been supported by the... Text Text  Text Text.\vspace*{-12pt}
+We thank the support of the UT Center for Integrative and Translational Genomics, 
+and funds from the UT-ORNL Governor's Chair, NIDA grant P30DA044223, NIAAA U01 
+AA013499 and U01 AA016662 for the work at UTHSC. \vspace*{-12pt}
 
 \bibliographystyle{natbib}
 %\bibliographystyle{achemnat}
