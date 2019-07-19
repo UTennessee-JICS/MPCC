@@ -88,20 +88,21 @@ analysis (WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL) mapping
 
 The BxD family currently consists of 150 inbred mice, and the BxD phenome consists 
 of 7000 hand curated and well-integrated classical phenotypes, and over 100 'omics' 
-datasets. Almost all BXD expression and phenotype data is freely available on 
+data sets. Almost all BXD expression and phenotype data is freely available on 
 \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}, which provides 
 powerful statistical tools for data analysis, including Pearson$'$s correlation.
 
-PCCs computation in the R language for statistical computing \citep{R:2005} is 
+PCC computation in the R language for statistical computing \citep{R:2005} is 
 provided by the $cor()$ function. The computation is implemented in C / C++ and 
-is relatively performant when no missing data is present. However, 
-in the presence of missing data 5 different options on how-to deal 
-with missing data are provided. The main choices are removes all rows that 
-contain missing data, essentially creating a dataset without missing data. This is 
-unwanted in bioinformatics because missing data is often omnipresent. 
-The second main choice is to handle missing data on a case by case basis. However, 
-due to the implementation this causes branching on missing data, leading to CPU 
-cache inefficiencies, significanly increasing the runtime of the computation. 
+is relatively performant when no missing data is present. However, in the 
+presence of missing data different strategies on how-to deal with missing data 
+are provided. 
+
+Strategy 1 is to removes all rows that contain missing data, essentially 
+creating a full data set. This is unwanted in bioinformatics because missing 
+data is often omnipresent. Strategy 2 handles missing data on a case by case 
+basis. However, this strategy causes CPU branching on missing data, leading to 
+cache and branch prediction inefficiencies, significanly increasing runtime.
 
 An additional issue with the $cor()$ function provided in R is the inability to 
 use multi-threading capabilities provided by modern CPU hardware. This limitation 
@@ -114,19 +115,6 @@ multi-threaded computations.
 \vspace*{-6pt}
 
 \section{Approach}
-First, a naive version of the PCC algorithm was developed. The naive version is 
-identical to the R $cor()$ function but with added modern multi-threading 
-support provided by OpenMP. Unlike the $parallel$ library, OpenMP allows 
-multi-threading without the need to start additional R sessions, thus removing 
-this additional overhead.
-
-Secondly, we reformulated the naive version of the PCC algorithm into a series of 
-matrix-matrix products and element-wise matrix operations. The 
-reformulated algorithm is called the matrix version. The matrix version 
-R interface is designed as a drop-in replacement for the $cor()$ 
-function provided by R. Optimizations performed are itemized below, and further 
-explained in the methods section.
-
 \subsection{Pearson$'$s Correlation Coefficient Calculation}
 When we say Pearson$'$s correlation coefficient, we mean:
 
@@ -137,6 +125,14 @@ r=\frac{n\sum x_iy_i-\sum x_i\sum y_i}{((n\sum x_i^2-(\sum x_i)^2)(n\sum x_i^2-(
 where $x$ and $y$ are vectors of length $n$, and $r$ is a real number between -1 and 1 inclusive.
 
 \subsection{The Naive Version}
+The Naive version of the PCC algorithm was developed to be identical 
+to the R $cor()$ function but with added modern multi-threading 
+support provided by OpenMP. Unlike the $parallel$ library, OpenMP 
+allows multi-threading without the need to start additional R 
+sessions, thus removing this additional overhead. The Naive version 
+allows to benchmark improvements gained by the Matrix version while 
+not having to compensate for the absence of multi-threading 
+support in the R $cor()$ function.
 
 Given $A$, an arbitrary number of vectors of length $n$, and $B$, an arbitrary number of vectors of length $n$, 
 we define the naive version like so:
@@ -174,7 +170,10 @@ $SAB_{ij}$ is the sum of the elements of vector $i$ in $A$ times the  elements o
 and $R_ij$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
 
 \subsection{The Matrix Version}
-  
+We reformulated the naive version of the PCC algorithm into a series of 
+matrix-matrix products and element-wise matrix operations. The 
+reformulated algorithm is called the Matrix version. Optimizations 
+performed are itemized below, and further explained in the methods section.
 \vspace{2mm}
 
 \begin{algorithmic}[1]
@@ -232,8 +231,8 @@ the number of zeros in the result is the size of the PCC calculation for those t
 
 \subsection{Benchmark on BxD recombinant inbred lines}
 Data of N phenotypes was extracted from GeneNetwork, together with 
-X gene extression datasets, and the recently update genotypes for 
-the BxD family. PCC within and between gene expression datasets are 
+X gene extression data sets, and the recently update genotypes for 
+the BxD family. PCC within and between gene expression data sets are 
 computed to build networks of co-expressed genes. PCC between 
 classical phenotypes and gene expression is commonly used to 
 indentify genes which might be involved in phenotype regulation. 
@@ -251,23 +250,23 @@ missing data is present (Fig 1a).
 multiple gene expression data sets available in GeneNetwork. This 
 benchmark scenario compared MPCC versus $cor()$ in the presence of 
 a lot of missing data since phenotypes are measured on a limited set 
-of strains. Gene expression datasets are added in a step-wise fashion 
+of strains. Gene expression data sets are added in a step-wise fashion 
 to increase the computational requirements in a step-wise fashion 
 (Fig 1b).
 
-The datasets analyzed during the current study are freely available in the 
+The data sets analyzed during the current study are freely available in the 
 GeneNetwork repository, \href{https://genenetwork.org/}{GeneNetwork.org}
 
-\end{methods} \vspace*{-6pt}
+\end{methods}
 
 \section{Results}
+Both the Naive and Matrix versions provide R interfaces designed as a drop-in 
+replacement for the $cor()$ function provided by R.
+
 The Naive version leverages a modern multi-threading OpenMP approach 
 to improve performance in comparison to the $cor()$ function provided 
-in R providing a consistent ~ 3.5x speedup (56 core Intel Xeon E5-2680 
-v4 $@$ 2.40GHz - data not shown). The Naive version allows to 
-benchmark improvements gained by the Matrix version without having to 
-compensate for the absence of multi-threading support in the R 
-$cor()$ function.
+in R providing a consistent 3.5x speedup (56 core Intel Xeon E5-2680 
+v4 $@$ 2.40GHz - data not shown). 
 
 \vspace*{-6pt}
 
