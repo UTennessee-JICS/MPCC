@@ -2,7 +2,7 @@
 
 # run the PNM timing
 runPNM <- function(fun = cor, p = 100, n = 150, m = 20, missing = 0, use = "everything") {
-  mAB <- genAB(p,n,m,missing)
+  mAB <- genAB(p, n, m, missing)
 
   start <- proc.time()[3] # Start time
   res <- fun(mAB[["A"]], mAB[["B"]], use = use)
@@ -10,6 +10,15 @@ runPNM <- function(fun = cor, p = 100, n = 150, m = 20, missing = 0, use = "ever
 
   return(list(res = res, time = elapsed))
 }
+
+# run the PNM timing
+runAB <- function(fun = cor, mAB, use = "everything") {
+  start <- proc.time()[3] # Start time
+  res <- fun(mAB[["A"]], mAB[["B"]], use = use)
+  elapsed <- proc.time()[3] - start # Add time information
+  return(list(res = res, time = elapsed))
+}
+
 
 testRunPNM <- function(){
  require(MPCC)
