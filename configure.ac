@@ -7,7 +7,7 @@ AC_ARG_WITH([mkl-home],
                            [the location of MKL]),
             [MKL_HOME=$withval])
 if test [ -n "$MKL_HOME" ] ; then
-   MPCC_CPPFLAGS="-DMKL_ILP64 -std=c++11 -I. -I$MKL_HOME/include/"
+   MPCC_CPPFLAGS="-DMKL -DMKL_ILP64 -std=c++11 -I. -I$MKL_HOME/include/"
    LIBS="-L$MKL_HOME -Wl,--start-group $MKL_HOME/lib/intel64/libmkl_intel_ilp64.a $MKL_HOME/lib/intel64/libmkl_intel_thread.a $MKL_HOME/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl ${LIBS}"
 else
    echo "Could not determine MKL_HOME"
