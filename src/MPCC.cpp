@@ -338,7 +338,7 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
-        if (std::isnan(B[j*n+k])) {
+        if (CHECKNA(B[j*n+k])) {
           bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
         }
       }
@@ -376,7 +376,7 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(i)
     for (i=0; i<m*n; i++) {
-      if (std::isnan(A[i])) { A[i]=0.0; }
+      if (CHECKNA(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
     //info("VSQR\n",1);
@@ -391,7 +391,7 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(j)
     for (j=0; j<n*p; j++) {
-      if (std::isnan(B[j])) { B[j]=0.0; }
+      if (CHECKNA(B[j])) { B[j]=0.0; }
       else{ UnitB[j]=1; }
     }
     //vsSqr(n*p,B,BB);
