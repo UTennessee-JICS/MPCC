@@ -36,6 +36,9 @@
       #define err(format, ...) { \
         printf(format, __VA_ARGS__); \
         exit(-1); }
+        
+      #define CHECKNA std::isnan
+        
     #else
       #define DOUBLE 1
       #include <R.h>
@@ -46,7 +49,9 @@
         Rprintf(format, __VA_ARGS__);}
       #define err(format, ...) { \
         error(format, __VA_ARGS__);}
-      #endif
+      
+      #define CHECKNA ISNA
+    #endif
 
   #if DOUBLE
     #define DataType double
@@ -72,7 +77,7 @@
     #define NANF std::nan("1")
 #endif
     
-    #define MISSING_MARKER NANF
+#define MISSING_MARKER NANF
 
     // Forward declaration of the functions
     int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);

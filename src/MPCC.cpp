@@ -325,10 +325,10 @@ int pcc_matrix(int m, int n, int p,
     //if element in A is missing, flip bit of corresponding col to 1
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
-      for (k=0; k<n; k++) {	
-	if (std::isnan(A[i*n+k])) {
-	  amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
-	}
+      for (k=0; k<n; k++) {
+        if (CHECKNA(A[i*n+k])) {
+          amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
+        }
       }
     }
 
@@ -338,9 +338,9 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
-	if (std::isnan(B[j*n+k])) {
-	  bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
-	}
+        if (std::isnan(B[j*n+k])) {
+          bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
+        }
       }
     }
 
