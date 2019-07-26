@@ -50,7 +50,7 @@
       #define err(format, ...) { \
         error(format, __VA_ARGS__);}
       
-      #define CHECKNA ISNA
+      #define CHECKNA std::isnan
     #endif
 
   #if DOUBLE
