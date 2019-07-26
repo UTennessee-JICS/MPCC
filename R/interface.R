@@ -24,6 +24,7 @@ PCC.naive <- function(aM, bM = NULL, use = NULL, debugOn = FALSE) {
                            m = as.integer(ncol(aM)), # nPhe A
                            p = as.integer(ncol(bM)), # nPhe B
                            res = as.double(rep(0, ncol(aM) * ncol(bM))), NAOK = TRUE, package = "MPCC")
+
   res$res <- matrix(res$res, ncol(aM), ncol(bM), byrow=TRUE, dimnames = list(colnames(aM), colnames(bM)))
   if(debugOn) return(res)
   return(res$res)

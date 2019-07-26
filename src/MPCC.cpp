@@ -38,7 +38,7 @@ static DataType TimeSpecToNanoSeconds(struct timespec* ts){
 int bitsum(unsigned long n){
   int c=0;
   int nn=n;
-  for (c=0; nn; ++c) { nn&=nn-1;}
+  for (c=0; nn; c++) { nn&=nn-1;}
   return c;
 }
 
