@@ -103,7 +103,7 @@ void initialize(int &m, int &n, int &p, int seed,
      _n = convert_to_val(text);
      std::getline(mat_B_file, text);
      p = convert_to_val(text);
-printf("_n=%d p=%d\n",_n,p);
+     printf("_n=%d p=%d\n",_n,p);
      mat_B_file.close();
   }
 
@@ -142,7 +142,6 @@ printf("_n=%d p=%d\n",_n,p);
   __assume_aligned(C, 64);
   //__assume(m%16==0);
  
-
   //setup random numbers to create some synthetic matrices for correlation
   // if input files do not exist
   srand(seed);
@@ -170,7 +169,7 @@ printf("_n=%d p=%d\n",_n,p);
      for(int i=0;i<m*n;++i){ 
         std::getline(mat_A_file, text);
         (*A)[i] = convert_to_val(text);
-	//if(isnan((*A)[i])){printf("A[%d]==NAN\n",i);} 
+        //if(isnan((*A)[i])){printf("A[%d]==NAN\n",i);} 
      }
      mat_A_file.close();
   }
@@ -421,7 +420,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
+         m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
     //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
@@ -429,7 +428,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
+         m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
 
     //SAA = AA*UnitB
@@ -438,7 +437,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
+         m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
     //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
@@ -446,7 +445,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
+         m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
     mkl_free(UnitA);
     mkl_free(UnitB);
@@ -456,7 +455,7 @@ int pcc_matrix(int m, int n, int p,
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
+         m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
 
     //clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
     //accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
