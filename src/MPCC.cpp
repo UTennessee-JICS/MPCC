@@ -33,14 +33,6 @@ static DataType TimeSpecToSeconds(struct timespec* ts){
 static DataType TimeSpecToNanoSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec*1000000000.0 + (DataType)ts->tv_nsec;
 }
-/*
-// This function is an implementation of a bitsum of an unsigned long n;
-int bitsum(unsigned long n){
-  int c=0;
-  int nn=n;
-  for (c=0; nn; ++c) { nn&=nn-1;}
-  return c;
-} */
 
 // This function is an implementation of a bitsum of an unsigned long n;
 // same as popcount64 algorithm
