@@ -38,7 +38,7 @@ static DataType TimeSpecToNanoSeconds(struct timespec* ts){
 int bitsum(unsigned long n){
   int c=0;
   int nn=n;
-  for (c=0; nn; c++) { nn&=nn-1;}
+  for (c=0; nn; ++c) { nn&=nn-1;}
   return c;
 }
 
@@ -247,7 +247,7 @@ printf("_n=%d p=%d\n",_n,p);
 //P = [ sum(AB) - (sumA)(sumB)/N] /
 //    sqrt[ ( sumA^2 -(1/N) (sum A/)^2)[ ( sumB^2 - (1/N)(sum B)^2) ]
 int pcc_matrix(int m, int n, int p,
-	       DataType* A, DataType* B, DataType* P)	       
+               DataType* A, DataType* B, DataType* P)
 {
   int i,j,k;
   int stride = ((n-1)/64 +1);
@@ -351,12 +351,12 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,j,k)
     for (i=0; i<m; i++){
       for (j=0; j<p; j++){
-	for(k=0; k<stride; ++k){
-	  M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
-	}
+        for(k=0; k<stride; ++k){
+          M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
+        }
       }
     }
-  
+
     //Compute the number of non missing data for every row/column pair.
     //This is done by subtracting the number of elements in a row by the number of
     // missing data bits set for the row/column pair.
