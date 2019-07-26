@@ -42,6 +42,17 @@ int bitsum(unsigned long n){
   return c;
 }
 
+// This function is an implementation of a bitsum of an unsigned long n;
+// same as popcount64 algorithm
+int bitsum(unsigned long n)
+{
+   int count;
+   for (count=0; n; count++)
+      n &= n - 1;
+   return count;
+}
+                    
+
 // This function convert a string to datatype (double or float);
 DataType convert_to_val(string text)
 {
