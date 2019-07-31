@@ -3,7 +3,8 @@ CXX		= gcc
 #CXX		= icc
 
 INCLUDE = -I${MKLROOT}/include
-CXXFLAGS	= -std=c++11 -Wall -g -O3 -fopenmp -pthread -m64 -mavx512f -mavx512cd -fopt-info-vec-all -I${MKLROOT}/include
+#CXXFLAGS	= -std=c++11 -Wall -g -O3 -fopenmp -pthread -m64 -mavx512f -mavx512cd -I${MKLROOT}/include
+CXXFLAGS	= -std=c++11 -g -O3 -fopenmp -m64 -mavx512f -mavx512cd  
 #CXXFLAGS	= -std=c++11 -Wall -g -O3 -qopenmp -pthread -m64 -xAVX -axCore-AVX512 -qopt-assume-safe-padding -qopt-zmm-usage=high -qopt-report=5
 CXXFLAGS+=$(BUILD)
 

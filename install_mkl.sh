@@ -9,3 +9,6 @@ sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources
 sudo apt-get update
 sudo apt-get install intel-mkl-64bit-2018.2-046
 
+# Install libiomp5 and libiomp-dev
+sudo apt-get install libiomp5 libiomp-dev
+

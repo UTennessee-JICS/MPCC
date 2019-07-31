@@ -13,56 +13,49 @@
 #include "MPCC.h"
 
 using namespace std;
-#define BILLION  1000000000L
+//##ifdef USING_R
+//using namespace Rcpp;
+//#endif
 
 #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
 #define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
 #define DEV_CHECKPT printf("Checkpoint: %s, line %d\n", __FILE__, __LINE__); fflush(stdout); 
 
-//#define NANF std::nanf("1")
-#define NANF std::nan("1")
-#define MISSING_MARKER NANF
+//#ifndef NAIVE //default use matrix version
+//  #define NAIVE 0
+//#endif
 
-#ifndef NAIVE //default use matrix version
-  #define NAIVE 0
-#endif
-
-#ifndef DOUBLE //default to float type
-  #define DOUBLE 0
-#endif
+//#ifndef DOUBLE //default to float type
+//  #define DOUBLE 0
+//#endif
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
-};
+}
 
 static DataType TimeSpecToNanoSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec*1000000000.0 + (DataType)ts->tv_nsec;
-};
- 
-int bitsum(unsigned long n){
-  int c=0;
-  int nn=n;
-  for (c=0; nn; ++c) { nn&=nn-1;}
-  return c;
-};
+}
 
+// This function convert a string to datatype (double or float);
 DataType convert_to_val(string text)
 {
     DataType val;
     if(text=="nan" || text=="NaN" || text=="NAN"){ val = NANF;}
     else{ val = atof(text.c_str());}
     return val;
-};
+}
 
 #ifndef USING_R
-
+// This function initialized the matrices for m, n, p sized A and the B and result (C) matrices
+// Not part of the R interface since R initializes the memory
 void initialize(int &m, int &n, int &p, int seed,
-		DataType **A, 
-                DataType **B,
-		DataType **C,
-		char* matA_filename,
- 		char* matB_filename,
-		bool &transposeB)
+    DataType **A, 
+    DataType **B,
+    DataType **C,
+    char* matA_filename,
+    char* matB_filename,
+    bool &transposeB)
 {
   // A is m x n (tall and skinny) row major order
   // B is n x p (short and fat) row major order
@@ -81,7 +74,7 @@ void initialize(int &m, int &n, int &p, int seed,
      m = convert_to_val(text);
      std::getline(mat_A_file, text);
      n = convert_to_val(text);
-printf("m=%d n=%d\n",m,n);
+     //printf("m=%d n=%d\n",m,n);
      mat_A_file.close();
   }
   //else use default value for m,n
@@ -104,7 +97,7 @@ printf("m=%d n=%d\n",m,n);
      _n = convert_to_val(text);
      std::getline(mat_B_file, text);
      p = convert_to_val(text);
-printf("_n=%d p=%d\n",_n,p);
+     //printf("_n=%d p=%d\n",_n,p);
      mat_B_file.close();
   }
 
@@ -114,8 +107,8 @@ printf("_n=%d p=%d\n",_n,p);
      p=_n;
      _n=n; 
      transposeB=true; 
-     printf("Transposing B for computational efficiency in GEMMs\n");
-     printf("transposed _n=%d p=%d\n",_n,p);
+     //printf("Transposing B for computational efficiency in GEMMs\n");
+     //printf("transposed _n=%d p=%d\n",_n,p);
    }
 
   //check that inner dimension matches
@@ -190,8 +183,8 @@ printf("_n=%d p=%d\n",_n,p);
 
     //write matrix to file
     mat_A_file.open(matA_filename,ios::out);
-    mat_A_file << m;
-    mat_A_file << n;
+    mat_A_file << m << '\n';
+    mat_A_file << n << '\n';
     for(int i=0;i<m*n;++i) mat_A_file << (*A)[i] << '\n';
     mat_A_file.close();
   }
@@ -226,9 +219,9 @@ printf("_n=%d p=%d\n",_n,p);
    
     //write matrix to file
     mat_B_file.open(matB_filename,ios::out);
-    mat_B_file << n;
-    mat_B_file << p;
-    for(int i=0; i<n*p; ++i) mat_B_file << (*B)[i];
+    mat_B_file << n << '\n';
+    mat_B_file << p << '\n';
+    for(int i=0; i<n*p; ++i) mat_B_file << (*B)[i] << '\n';
     mat_B_file.close();
   }
 #if 0
@@ -237,646 +230,23 @@ printf("_n=%d p=%d\n",_n,p);
 #endif
   return;
 };
-
 #endif
 
-//This function is an implementation of a pairwise vector * vector correlation.
-//A is matrix of X vectors and B is transposed matrix of Y vectors:
-// C = [N sum(AB) - (sumA)(sumB)] /
-//     sqrt[ (N sumA^2 - (sum A)^2)[ (N sumB^2 - (sum B)^2) ]
-int pcc_naive(int m, int n, int p,
-	      DataType* A, DataType* B, DataType* C)
-{
-  DataType sab,sa,sb,saa,sbb;
-  int nn;
-  int i,j,k;
-  int count=1;
-
-  //sum_i( x[i]-x_mean[i])*(y[i]-y_mean[i]) ) /
-  //     [ sqrt( sum_i(x[i]-x_mean[i])^2 ) sqrt(sum_i(y[i]-y_mean[i])^2 ) ]
-  for (int ii=0; ii<count; ii++) {
-    #pragma omp parallel for private (i,j,k)
-    for (i=0; i<m; i++) {
-      for (j=0; j<p; j++) {
-
-        sa=0.0;
-        sb=0.0;
-        saa=0.0;
-        sbb=0.0;
-        sab=0.0;
-        nn=n;
-
-        for (k=0; k<n; k++) {
-          //if missing data exists decrement divisor for mean calculation
-          if (std::isnan(A[i*n+k]) || std::isnan(B[j*n+k])){
-             nn--;
-          }
-          else{
-             //compute components of PCC function
-             sa  += A[i*n+k];
-             sb  += B[j*n+k];
-             sab += A[i*n+k] * B[j*n+k];
-             saa += A[i*n+k] * A[i*n+k];
-             sbb += B[j*n+k] * B[j*n+k];
-          }
-        }
-          
-        if(nn>1){//Note edge case: if nn==1 then denominator is Zero! (saa==sa*sa, sbb==sb*sb)
-          C[i*p+j] = (nn*sab - sa*sb) / sqrt( (nn*saa - sa*sa)*(nn*sbb - sb*sb) );
-          //C[i*p+j] = (sab - sa*sb/nn) / sqrt( (saa - sa*sa/nn)*(sbb - sb*sb/nn) );
-          //if( sqrt( (saa - sa*sa/nn)*(sbb - sb*sb/nn) ) ==0.0){printf("Error: R[%d,%d] denominator is zero! sa[%d]=%e sb[%d]=%e \n",i,j,i,sa,j,sb);}
-        }
-        else{/*printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j);*/ C[i*p+j]=0.0;}
-        //else{/*printf("Error, no correlation possible for rows A[%d], B[%d]\n",i,j);*/ C[i*p+j]=NANF;}
-      }
-    }
-  }
-  return 0;
-}
-
-
-//This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
-//but increases the arithmetic intensity of the naive pairwise vector x vector correlation
-//A is matrix of X vectors and B is transposed matrix of Y vectors:
-//P = [ sum(AB) - (sumA)(sumB)/N] /
-//    sqrt[ ( sumA^2 -(1/N) (sum A/)^2)[ ( sumB^2 - (1/N)(sum B)^2) ]
-int pcc_matrix(int m, int n, int p,
-	       DataType* A, DataType* B, DataType* P)	       
-{
-  int i,j,k;
-  int stride = ((n-1)/64 +1);
-  DataType alpha=1.0;
-  DataType beta=0.0;
-  int count =1;
-  bool transposeB = true; //assume this is always true. 
-  //info("before calloc\n",1);
-  //allocate and initialize and align memory needed to compute PCC
-  DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
-  __assume_aligned(N, 64);
-  unsigned long *M = (unsigned long *) mkl_calloc( m*p, sizeof( unsigned long ), 64 );
-  __assume_aligned(M, 64);
-  DataType* SA =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
-  __assume_aligned(SA, 64);
-  DataType* AA =    ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 ); 
-  __assume_aligned(AA, 64);
-  DataType* SAA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SAA, 64);
-  DataType* SB =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
-  __assume_aligned(SB, 64);
-  DataType* BB =    ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 ); 
-  __assume_aligned(BB, 64);
-  DataType* SBB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
-  __assume_aligned(SBB, 64);
-  DataType* SAB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SAB, 64);
-  DataType* UnitA = ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 );
-  __assume_aligned(UnitA, 64);
-  DataType* UnitB = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
-  __assume_aligned(UnitB, 64);  
-  unsigned long *amask=(unsigned long*)mkl_calloc( m*stride, sizeof(unsigned long), 64);
-  __assume_aligned(amask, 64);
-  unsigned long *bmask=(unsigned long*)mkl_calloc( p*stride, sizeof(unsigned long), 64);
-  __assume_aligned(bmask, 64);
-
-  //info("after calloc\n",1);
-
-  //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
-  if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
-      (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
-    printf( "\n ERROR: Can't allocate memory for intermediate matrices. Aborting... \n\n");
-    mkl_free(N);
-    mkl_free(M);
-    mkl_free(SA);
-    mkl_free(AA);
-    mkl_free(SAA);
-    mkl_free(SB);
-    mkl_free(BB);
-    mkl_free(SBB);
-    mkl_free(SAB);
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-    mkl_free(amask);
-    mkl_free(bmask);
-    exit (0);
-  } 
-
-  //info("before deal missing data\n",1);
-
-  //deal with missing data
-  for (int ii=0; ii<count; ii++) {
-
-    //If element in A or B has missing data,
-    // add a 1 to the bit column k location for row i
-    
-    //initialize data mask for matrix A to 0's
-    #pragma omp parallel for private (i)
-    for (i=0; i< m*stride; i++) { amask[ i ]=0UL; }
-
-    //initialize data mask for matrix B to 0's
-    #pragma omp parallel for private (j)   
-    for (j=0; j< p*stride; j++) { bmask[ j ]=0UL; }
-
-    //if element in A is missing, flip bit of corresponding col to 1
-    #pragma omp parallel for private (i,k)
-    for (i=0; i<m; i++) {
-      for (k=0; k<n; k++) {	
-	if (std::isnan(A[i*n+k])) {
-	  amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
-	}
-      }
-    }
-
-    //printf("p=%d n=%d\n",p,n);
-
-    //if element in B is missing, flip bit of corresponding col to 1
-    #pragma omp parallel for private (j,k)
-    for (j=0; j<p; j++) {
-      for (k=0; k<n; k++) {	
-	if (std::isnan(B[j*n+k])) {
-	  bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
-	}
-      }
-    }
-
-    //For all A,B pairs if either A or B has a missing data bit set,
-    // a logical OR between row A[i] and column B[j] row bit masks will
-    // return a 1 in the bit mask M[i,j]
-    // For each row*col pair in A*B comparison, sum up the number of missing values using the bitstring
-    #pragma omp parallel for private (i,j,k)
-    for (i=0; i<m; i++){
-      for (j=0; j<p; j++){
-	for(k=0; k<stride; ++k){
-	  M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
-	}
-      }
-    }
-  
-    //Compute the number of non missing data for every row/column pair.
-    //This is done by subtracting the number of elements in a row by the number of
-    // missing data bits set for the row/column pair.
-    unsigned long ul_n = n;
-    #pragma omp parallel for private(i)
-    for(i=0; i<m*p; i++){
-      N[i] = (ul_n-M[i]);
-      //if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
-    }
-    //info("Call mkl_free\n",1);
-    mkl_free(M);
-    //info("After Call mkl_free\n",1);
-
-    //Zero out values that are marked as missing.
-    // For subsequent calculations of PCC terms, we need to replace
-    // missing value markers with 0 in matrices so that they dont contribute to 
-    // the sums
-    #pragma omp parallel for private(i)
-    for (i=0; i<m*n; i++) {
-      if (std::isnan(A[i])) { A[i]=0.0; }
-      else{ UnitA[i]=1; }
-    }
-    //info("VSQR\n",1);
-    //vsSqr(m*n,A,AA);
-    VSQR(m*n,A,AA);
-
-    //info("before zero out\n",1);
-
-    //Zero out values that are marked as missing.
-    // For subsequent calculations of PCC terms, we need to replace
-    // missing value markers with 0 in matrices so that they dont contribute to
-    // the sums
-    #pragma omp parallel for private(j)
-    for (j=0; j<n*p; j++) {
-      if (std::isnan(B[j])) { B[j]=0.0; }
-      else{ UnitB[j]=1; }
-    }
-    //vsSqr(n*p,B,BB);
-    VSQR(n*p,B,BB);
-
-    //variables used for performance timing
-    //struct timespec startGEMM, stopGEMM;
-    //double accumGEMM;
-
-    //info("before PCC terms\n",1);
-
-    //Compute PCC terms and assemble
-     
-
-    CBLAS_TRANSPOSE transB=CblasNoTrans;
-    int ldb=p;
-    if(transposeB){
-      transB=CblasTrans;
-      ldb=n;
-    }
-
-    //clock_gettime(CLOCK_MONOTONIC, &startGEMM);
-    
-    //SA = A*UnitB
-    //Compute sum of A for each AB row col pair.
-    // This requires multiplication with a UnitB matrix which acts as a mask 
-    // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
-
-    //SB = UnitA*B
-    //Compute sum of B for each AB row col pair.
-    // This requires multiplication with a UnitA matrix which acts as a mask 
-    // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
-
-
-    //SAA = AA*UnitB
-    //Compute sum of AA for each AB row col pair.
-    // This requires multiplication with a UnitB matrix which acts as a mask 
-    // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
-
-    //SBB = UnitA*BB
-    //Compute sum of BB for each AB row col pair.
-    // This requires multiplication with a UnitA matrix which acts as a mask 
-    // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
-
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-    mkl_free(AA);
-    mkl_free(BB);
-
-    //SAB = A*B
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
-
-    //clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
-    //accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
-    //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
-
-    DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
-   
-    DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
-    
-    DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
-    
-    DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-
-    //Compute and assemble composite terms
-
-    //SASB=SA*SB
-    VMUL(m*p,SA,SB,SASB);
-    //N*SASB
-    VMUL(m*p,N,SAB,NSAB); //ceb
-
-    //NSAB=(-1)NSASB+SAB  (numerator)
-    AXPY(m*p,(DataType)(-1), SASB,1, NSAB,1); //ceb
-
-    //(SA)^2
-    VSQR(m*p,SA,SASA);
-    //N(SAA)
-    VMUL(m*p,N,SAA,NSAA); //ceb
-    //NSAA=NSAA-SASA (denominator term 1)
-    AXPY(m*p,(DataType)(-1), SASA,1, NSAA,1);
-
-    //(SB)^2
-    VSQR(m*p,SB,SBSB);
-    //N(SBB)
-    VMUL(m*p,N,SBB,NSBB);
-    //NSBB=NSBB-SBSB (denominatr term 2)
-    AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
-
-    //DENOM=NSAA*NSBB (element wise multiplication)
-    VMUL(m*p,NSAA,NSBB,DENOM);
-    for(int i=0;i<m*p;++i){
-       if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
-    }
-    //sqrt(DENOM)
-    VSQRT(m*p,DENOM,DENOMSqrt);
-    //P=NSAB/DENOMSqrt (element wise division)
-    VDIV(m*p,NSAB,DENOMSqrt,P);   
-
-    mkl_free(SASB);
-    mkl_free(NSAB);
-    mkl_free(SASA);
-    mkl_free(NSAA);
-    mkl_free(SBSB);
-    mkl_free(NSBB);
-    mkl_free(DENOM);
-    mkl_free(DENOMSqrt); 
-  }
-
-  mkl_free(N);
-  mkl_free(SA);
-  mkl_free(SAA);
-  mkl_free(SB);
-  mkl_free(SBB);
-  mkl_free(SAB);
-
-  return 0;
-};
-
-
-//This function uses bit arithmetic to mask vectors prior to performing a number of FMA's
-//The intention is to improve upon the matrix x matrix missing data PCC algorithm by reducing uneccessary computations
-// and maximizing the use of vector register arithmetic.
-//A is matrix of X vectors and B is transposed matrix of Y vectors:
-//P = [ N*sum(AB) - (sumA)(sumB)] /
-//    sqrt[ (N sumA^2 -(sum A)^2)[ ( N sumB^2 - (sum B)^2) ]
-//P = (N*SAB - SA*SB)/Sqrt( (N*SAA - (SA)^2) * (N*SBB - (SB)^2)  )
-
-int pcc_vector(int m, int n, int p,
-	       DataType* A, DataType* B, DataType* P)	       
-{
-  int i,j,k;
-  int stride = ((n-1)/64 +1);
-  DataType alpha=1.0;
-  DataType beta=0.0;
-  int count =1;
-
-  bool transposeB = true; //assume this is always true. 
-
-  //we need to compute terms using FMA and masking and then assemble terms to 
-  // construct the PCC value for each row column pair
-
-  unsigned long zeros = 0;
-  unsigned long ones = ~0; //bitwise complement of 0 is all 1's (maxint)
-
-  //We wamt to perform operations on vectors of float or double precision values. 
-  //By constructing a mask in the form of a vector of floats or doubles, in which 
-  // the values we want to keep are masked by a number which translates to a 111..1 (i.e. maxint for 32 or 64 bit values),
-  // and the values we want to ignore are masked by a 000..0 bit string, we can simply apply a bitwise AND
-  // to get a resultant vector on which we can perform an FMA operation
-
-  //We also want to use this bitmask to compute a sum of non-missing data for each row-column pair
-
-  //We can create a bitmask for both A and B matrices by doing the following:
-  //  Initialize an Amask and Bmask matrix to all 1 bit strings. While reading A or B, 
-  //  where there is a Nan bit string in A or B, place a 0 bit string in the corresponding mask matrix
-
-  //To compute the various terms, eg, sum of A, for i=1..m, j=1..p, SA[i,j] = Sum_k(A[i] & Bmask[j]) 
-  // reduce (sum) operation will have to be hand coded via openMP parallel reduce with pragma simd inside loop
-  // horizontal_add returns sum of components of vector but is not efficient. Breaks SIMD ideal
- 
-
-
-  //How to create Amask and Bmask
-  //In the process of creating masks for A and B we can either replace Nans with 0 as we go in A and B, or we can then apply the masks to 
-  // to the matrices after we compute them.
-
-  // We can create a matrix mask starting with a mask matrix containing all maxint bit strings except where A has missing data in which case the mask will contain a zero.
-  // We can set these mask values to zero in the appropriate locations by traversing A or B and applying the isnan function in an if statement. 
-  // If false, then set Amask or Bmask respectively to ones at that location (masks initialized to zeros)
-  // (there may be a more efficent way to do this)
-  
-  DataType* Amask = ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 );
-  __assume_aligned(Amask, 64);
-  for(i=0; i<m*n; ++i){
-     if(isnan(A[i])){ A[i]=0;}
-     else{Amask[i]=ones;}
-  }
-
-  DataType* Bmask = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
-  __assume_aligned(Bmask, 64);    
-  for(i=0; i<p*n; ++i){
-     if(isnan(B[i])){ B[i]=0;}
-     else{Bmask[i]=ones;}
-  }
-
-  //The masks can then be used by employing a bitwise (AND) &, between the elements of the mask and the elements of the matrix or vector we want to mask. 
-  // The elements masked with a zero bit string will return a zero, the elements masked with the 1 bit string will return the original element.
-
-  
-  //How to compute N?
-  // N[i,j] contains the number of valid pairs (no Nan's) of elements when comparing rows A[i] and B[j].
-  // If we apply a bitwise (AND) & to compare rows A[i] and B[j] the result will be a bit vector of 1's for all element 
-  // comparisons that don't include Nan's and zero's elsewhere. To sum up the valid element pairs, we could simply loop over the 
-  // resulting vector and count up the maxints.
-  //(There may be a faster way to sum values for N using bit ops)
-
-  //N contains the number of elements used in each row column PCC calculation (after missing values are removed)
-  DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
-  __assume_aligned(N, 64);
-  for(i=0; i<m; ++i){
-     for(j=0; j<p; ++j){
-        for(k=0; k<n; ++k){
-           //if( (Amask[i*n+k] & Bmask[j*n+k]) > 0  ){ N[i*p+j]++; }  
-           unsigned long* A_bitstring = reinterpret_cast<unsigned long* >(&(Amask[i*n+k]));  
-           unsigned long* B_bitstring = reinterpret_cast<unsigned long* >(&(Bmask[j*n+k]));
-           unsigned long C_bitstring = *A_bitstring & *B_bitstring;
-           if( C_bitstring > 0){ N[i*p+j]++;}
-        }
-     }
-  }
-
-
-  //After computing masks and N, we want to replace Nan's in A and B with 0.
-  // We can do this by masking A with Amask and B with Bmask 
-
-  //AA and BB can be computed simply by multiplying vector A[i] by vector A[i] and store in AA[i] via FMA, after A and B have had mask applied
-
-  DataType tmp;
-  
-  //SAB may best be done by a GEMM operation, though the symmetric portion of the computation can be reduced by 
-  //  eliminating the lower triangular redundancy.
-  
-
-  DataType* SAB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SAB, 64);
-  //#pragma omp parallel for reduction (+:sum)
-  for(i=0; i<m; ++i){
-    //for(j=i; j<p; ++j){//upper triangular computations only. Assuming p>=m
-    //for(j=; j<p; ++j){//upper triangular computations only. Assuming p>=m
-    for(j=0; j<p; ++j){
-       //#pragma SIMD
-       for(k=0;k<n;++k){
-          SAB[i*n+j] += A[i*n+k]*B[j*n+k];
-       }
-    }
-  }
-
-  DataType* SA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SA, 64);
-  //#pragma omp parallel for reduction (+:sum)
-  for(i=0; i<m; ++i){
-    for(j=0; j<p; ++j){
-       //#pragma SIMD
-       for(k=0;k<n;++k){
-          //tmp=(A[i*n+k] & Bmask[j*n+k]);
-          unsigned long* A_bitstring = reinterpret_cast<unsigned long* >(&(A[i*n+k]));
-          unsigned long* B_bitstring = reinterpret_cast<unsigned long* >(&(Bmask[j*n+k]));
-          unsigned long C_bitstring = *A_bitstring & *B_bitstring;
-          SA[i*n+j] += reinterpret_cast<DataType >(C_bitstring);
-       }
-    }
-  }
-
-  DataType* SB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SB, 64);
-  //#pragma omp parallel for reduction (+:sum)
-  for(j=0; j<p; ++j){
-     for(i=0; i<m; ++i){
-       //#pragma SIMD
-       for(k=0;k<n;++k){
-          //tmp=(B[j*n+k] & Amask[i*n+k]);
-           unsigned long* A_bitstring = reinterpret_cast<unsigned long* >(&(Amask[i*n+k]));
-           unsigned long* B_bitstring = reinterpret_cast<unsigned long* >(&(B[j*n+k]));
-           unsigned long C_bitstring = *A_bitstring & *B_bitstring;
-          SB[j*n+k] += reinterpret_cast<DataType >(C_bitstring);
-       }
-    }
-  }
-
-  DataType* SAA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SAA, 64);
-  //#pragma omp parallel for reduction (+:sum)
-  for(i=0; i<m; ++i){
-    for(j=0; j<p; ++j){
-       //#pragma SIMD
-       for(k=0;k<n;++k){
-          //tmp=(A[i*n+k] & Bmask[j*n+k]);
-          unsigned long* A_bitstring = reinterpret_cast<unsigned long* >(&(Amask[i*n+k]));
-          unsigned long* B_bitstring = reinterpret_cast<unsigned long* >(&(B[j*n+k]));
-          unsigned long C_bitstring = *A_bitstring & *B_bitstring;
-          tmp=reinterpret_cast<DataType >(C_bitstring);
-          SAA[i*n+j] += tmp*tmp;
-       }
-    }
-  }
-
-  DataType* SBB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
-  __assume_aligned(SBB, 64);
-  //#pragma omp parallel for reduction (+:sum)
-  for(j=0; j<p; ++j){
-     for(i=0; i<m; ++i){
-       //#pragma SIMD
-       for(k=0;k<n;++k){
-          //tmp=(B[j*n+k] & Amask[i*n+k]);
-          unsigned long* A_bitstring = reinterpret_cast<unsigned long* >(&(Amask[i*n+k]));
-          unsigned long* B_bitstring = reinterpret_cast<unsigned long* >(&(B[j*n+k]));
-          unsigned long C_bitstring = *A_bitstring & *B_bitstring;
-          SBB[j*n+i] += reinterpret_cast<DataType >(C_bitstring);;
-       }
-    }
-  }
-
-
-  //allocate and initialize and align memory needed to compute PCC
-
-
-
-    //variables used for performance timing
-    struct timespec startGEMM, stopGEMM;
-    double accumGEMM;
-
-    //info("before PCC terms\n",1);
-
-    //Compute PCC terms and assemble
-
-    CBLAS_TRANSPOSE transB=CblasNoTrans;
-    int ldb=p;
-    if(transposeB){
-      transB=CblasTrans;
-      ldb=n;
-    }
-
-    clock_gettime(CLOCK_MONOTONIC, &startGEMM);
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-
-    clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
-    accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
-    //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
-
-    DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
-   
-    DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
-    
-    DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
-    
-    DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-
-    //Compute and assemble composite terms
-
-    //SASB=SA*SB
-    VMUL(m*p,SA,SB,SASB);
-    //N*SAB
-    VMUL(m*p,N,SAB,NSAB); //ceb
-    //SAB=(-1)SASB+NSAB  (numerator)
-    AXPY(m*p,(DataType)(-1), SASB,1, NSAB,1); //ceb
-
-    //(SA)^2
-    //vsSqr(m*p,SA,SASA);
-    VSQR(m*p,SA,SASA);
-    //N(SAA)
-    VMUL(m*p,N,SAA,NSAA); //ceb
-    //SAA=NSAA-SASA (denominator term 1)
-    AXPY(m*p,(DataType)(-1), SASA,1, NSAA,1);
-
-    //(SB)^2
-    //vsSqr(m*p,SB,SBSB);
-    VSQR(m*p,SB,SBSB);
-    //N(SBB)
-    VMUL(m*p,N,SBB,NSBB);
-    //SBB=NSBB-SBSB
-    AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
-
-    //DENOM=NSAA*NSBB (element wise multiplication)
-    VMUL(m*p,NSAA,NSBB,DENOM);
-    for(int i=0;i<m*p;++i){
-       if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
-    }
-    //sqrt(DENOM)
-    VSQRT(m*p,DENOM,DENOMSqrt);
-    //P=SAB/DENOMSqrt (element wise division)
-    VDIV(m*p,SAB,DENOMSqrt,P);   
-
-    mkl_free(SASA);
-    mkl_free(SASB);
-    mkl_free(SBSB);
-    mkl_free(NSAB);
-    mkl_free(NSAA);
-    mkl_free(NSBB);
-    mkl_free(DENOM);
-    mkl_free(DENOMSqrt); 
-  }
-
-  mkl_free(N);
-  mkl_free(SA);
-  mkl_free(SAA);
-  mkl_free(SB);
-  mkl_free(SBB);
-  mkl_free(SAB);
-
-  return 0;
-};
 
 #ifndef USING_R
-
 int main (int argc, char **argv) {
   //ceb testing with various square matrix sizes
-  //16384 = 1024*16
   //32768 = 2048*16
   //40960 = 2560*16 too large (for skylake)
-
+  printf("sizeof(DataType)=%lu\n",sizeof(DataType));
   //set default values 
-  int m=64;//16*1500;//24000^3 for peak performance on skylake
-  int n=16;
-  int p=32;
+  int m=40000;//16*1500;//24000^3 for peak performance on skylake
+  int n=40000;
+  int p=40000;
   int count=1;
   int seed =1; 
-  char* matA_filename;//="matA.dat";
-  char* matB_filename;//="matB.dat";
+  char* matA_filename="matA.dat";
+  char* matB_filename="matB.dat";
  
   if(argc>1){ matA_filename = argv[1]; }
   if(argc>2){ matB_filename = argv[2]; }
@@ -891,24 +261,40 @@ int main (int argc, char **argv) {
   DataType* diff;
   DataType* C;
   DataType accumR;
-   
-  bool transposeB=false;
-  initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
-  //C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
-  clock_gettime(CLOCK_MONOTONIC, &startPCC);
-#if NAIVE
-  printf("naive PCC implmentation\n");
-  pcc_naive(m, n, p, A, B, R);
-#else  
-  printf("matrix PCC implmentation\n");
-  //pcc_matrix(m, n, p, A, B, R);
-  pcc_vector(m, n, p, A, B, R);
+
+  int matsize=10000; 
+  //for(int matsize=40; matsize<=40000; matsize*=10){   
+  //for(matsize=40000; matsize<=40000; matsize++)
+  {   
+     printf("testing square matrix size %d\n",matsize);
+     m=matsize; n=matsize; p=matsize;
+     bool transposeB=false;
+     char strbufA[80];
+     sprintf(strbufA , "data/matA_%d_%d_%d.dat", m,n,p);
+     matA_filename = strbufA;
+     char strbufB[80];
+     sprintf(strbufB , "data/matB_%d_%d_%d.dat", m,n,p);
+     matB_filename = strbufB;
+     initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
+     //C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+     
+     int maxthreads=omp_get_max_threads();
+     for(int nthreads=maxthreads; nthreads<=maxthreads; nthreads++){
+        printf("nthreads=%d\n",nthreads);
+#if 0
+        printf("naive PCC implmentation\n");
+        pcc_naive(m, n, p, A, B, R, nthreads);
 #endif
-  clock_gettime(CLOCK_MONOTONIC, &stopPCC);
-  accumR =  (TimeSpecToSeconds(&stopPCC)- TimeSpecToSeconds(&startPCC));
-
-
-
+#if 0
+        printf("vector PCC implmentation\n");
+        pcc_vector(m, n, p, A, B, R, nthreads);
+#endif
+#if 1
+        printf("matrix PCC implmentation\n");
+        pcc_matrix(m, n, p, A, B, R, nthreads);
+#endif
+     }
+  }
 #if 0
   //read in results file for comparison
   fstream test_file;
@@ -940,10 +326,10 @@ int main (int argc, char **argv) {
     mat_R_file.close();
 #endif
  
-  DataType R_2norm = 0.0;
-  DataType C_2norm = 0.0;
-  DataType diff_2norm = 0.0;
-  DataType relativeNorm = 0.0;
+  //DataType R_2norm = 0.0;
+  //DataType C_2norm = 0.0;
+  //DataType diff_2norm = 0.0;
+  //DataType relativeNorm = 0.0;
 
 #if 0
   for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
@@ -973,10 +359,8 @@ int main (int argc, char **argv) {
     diff_file.close();
 #endif
 
-  printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
+  //printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
 
   return 0;
 }
-
 #endif
-

@@ -1,0 +1,6 @@
+library(MPCC)
+library(OpenMPController)
+#testBug()
+#testImprovement()
+test_MPCC_Scaling()
+q("no")
