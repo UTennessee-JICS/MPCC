@@ -2,6 +2,7 @@
 
 \alias{genAB}
 \alias{runPNM}
+\alias{runAB}
 \alias{testImprovement}
 \alias{testRunPNM}
 

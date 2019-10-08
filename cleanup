@@ -1,3 +1,2 @@
 #!/bin/sh
-
 rm -f config.* src/*.o src/*.so src/Makevars src/config.h
