@@ -6,17 +6,17 @@
   Fast missing data agnostic pearson correlation computation on large matrices.
 }
 \usage{
-PCC(aM, bM, use = NULL)
-PCC.naive(aM, bM, use = NULL, debugOn = FALSE)
+PCC(aM, bM = NULL, use = NULL, debugOn = FALSE)
+PCC.naive(aM, bM = NULL, use = NULL, debugOn = FALSE)
 }
 \arguments{
   \item{aM}{ Matrix aM, of size (n x m) }
-  \item{bM}{ Matrix bM, of size (n x p), if bM is set to null column-wise auto correlation of the aM matrix is computed. }
+  \item{bM}{ Matrix bM, of size (n x p), if bM is set to NULL column-wise auto correlation of the aM matrix is computed. }
   \item{use}{ The use parameter is ignored by the mpcc algorithm, it is provided for backwards compatibility with the cor() function }
   \item{debugOn}{ Used for debugging the C-code }
 }
 \value{
-  Returns a matrix of correlations between matrix aM and bM, or when bM is null a matrix of column-wise autocorrelation of aM.
+  Returns a matrix of correlations between columns of matrix aM and bM, or when bM is NULL the column-wise autocorrelation matrix of aM.
 }
 \details{
   When the package is compiled with MKL support, the computation will use the optimized
