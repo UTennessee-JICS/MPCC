@@ -4,7 +4,7 @@
 library(MPCC)
 
 set.seed(1)
-mAB <- genAB(p = 2000, n = 2000, m = 2000)
+mAB <- genAB(p = 200, n = 2000, m = 200)
 
 s.ref <- proc.time()[3]
 ref <- cor(mAB[["A"]], mAB[["B"]])
