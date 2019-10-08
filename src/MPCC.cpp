@@ -304,7 +304,11 @@ int pcc_matrix(int m, int n, int p,
     mkl_free(UnitB);
     mkl_free(amask);
     mkl_free(bmask);
+    #ifndef USING_R
     exit (0);
+    #else
+    return(0);
+    #endif
   } 
 
   //info("before deal missing data\n",1);
