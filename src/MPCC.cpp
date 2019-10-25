@@ -35,14 +35,6 @@ static DataType TimeSpecToNanoSeconds(struct timespec* ts){
 }
 
 // This function is an implementation of a bitsum of an unsigned long n;
-int bitsum(unsigned long n){
-  int c=0;
-  int nn=n;
-  for (c=0; nn; ++c) { nn&=nn-1;}
-  return c;
-}
-
-// This function is an implementation of a bitsum of an unsigned long n;
 // same as popcount64 algorithm
 int bitsum(unsigned long n)
 {
@@ -51,7 +43,6 @@ int bitsum(unsigned long n)
       n &= n - 1;
    return count;
 }
-                    
 
 // This function convert a string to datatype (double or float);
 DataType convert_to_val(string text)
@@ -114,7 +105,7 @@ void initialize(int &m, int &n, int &p, int seed,
      _n = convert_to_val(text);
      std::getline(mat_B_file, text);
      p = convert_to_val(text);
-printf("_n=%d p=%d\n",_n,p);
+     printf("_n=%d p=%d\n",_n,p);
      mat_B_file.close();
   }
 
@@ -153,7 +144,6 @@ printf("_n=%d p=%d\n",_n,p);
   __assume_aligned(C, 64);
   //__assume(m%16==0);
  
-
   //setup random numbers to create some synthetic matrices for correlation
   // if input files do not exist
   srand(seed);
@@ -181,7 +171,7 @@ printf("_n=%d p=%d\n",_n,p);
      for(int i=0;i<m*n;++i){ 
         std::getline(mat_A_file, text);
         (*A)[i] = convert_to_val(text);
-	//if(isnan((*A)[i])){printf("A[%d]==NAN\n",i);} 
+        //if(isnan((*A)[i])){printf("A[%d]==NAN\n",i);} 
      }
      mat_A_file.close();
   }
@@ -258,7 +248,7 @@ printf("_n=%d p=%d\n",_n,p);
 //P = [ sum(AB) - (sumA)(sumB)/N] /
 //    sqrt[ ( sumA^2 -(1/N) (sum A/)^2)[ ( sumB^2 - (1/N)(sum B)^2) ]
 int pcc_matrix(int m, int n, int p,
-	       DataType* A, DataType* B, DataType* P)	       
+               DataType* A, DataType* B, DataType* P)
 {
   int i,j,k;
   int stride = ((n-1)/64 +1);
@@ -314,7 +304,11 @@ int pcc_matrix(int m, int n, int p,
     mkl_free(UnitB);
     mkl_free(amask);
     mkl_free(bmask);
+    #ifndef USING_R
     exit (0);
+    #else
+    return(0);
+    #endif
   } 
 
   //info("before deal missing data\n",1);
@@ -336,10 +330,10 @@ int pcc_matrix(int m, int n, int p,
     //if element in A is missing, flip bit of corresponding col to 1
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
-      for (k=0; k<n; k++) {	
-	if (std::isnan(A[i*n+k])) {
-	  amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
-	}
+      for (k=0; k<n; k++) {
+        if (CHECKNA(A[i*n+k])) {
+          amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
+        }
       }
     }
 
@@ -349,9 +343,9 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
-	if (std::isnan(B[j*n+k])) {
-	  bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
-	}
+        if (CHECKNA(B[j*n+k])) {
+          bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
+        }
       }
     }
 
@@ -362,12 +356,12 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,j,k)
     for (i=0; i<m; i++){
       for (j=0; j<p; j++){
-	for(k=0; k<stride; ++k){
-	  M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
-	}
+        for(k=0; k<stride; ++k){
+          M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
+        }
       }
     }
-  
+
     //Compute the number of non missing data for every row/column pair.
     //This is done by subtracting the number of elements in a row by the number of
     // missing data bits set for the row/column pair.
@@ -387,7 +381,7 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(i)
     for (i=0; i<m*n; i++) {
-      if (std::isnan(A[i])) { A[i]=0.0; }
+      if (CHECKNA(A[i])) { A[i]=0.0; }
       else{ UnitA[i]=1; }
     }
     //info("VSQR\n",1);
@@ -402,7 +396,7 @@ int pcc_matrix(int m, int n, int p,
     // the sums
     #pragma omp parallel for private(j)
     for (j=0; j<n*p; j++) {
-      if (std::isnan(B[j])) { B[j]=0.0; }
+      if (CHECKNA(B[j])) { B[j]=0.0; }
       else{ UnitB[j]=1; }
     }
     //vsSqr(n*p,B,BB);
@@ -432,7 +426,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
+         m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
     //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
@@ -440,7 +434,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
+         m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
 
     //SAA = AA*UnitB
@@ -449,7 +443,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
+         m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
     //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
@@ -457,7 +451,7 @@ int pcc_matrix(int m, int n, int p,
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
+         m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
     mkl_free(UnitA);
     mkl_free(UnitB);
@@ -467,7 +461,7 @@ int pcc_matrix(int m, int n, int p,
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
-		m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
+         m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
 
     //clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
     //accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));

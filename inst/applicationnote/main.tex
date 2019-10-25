@@ -1,0 +1,327 @@
+\documentclass{bioinfo}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
+\copyrightyear{2019} \pubyear{2019}
+
+\access{Advance Access Publication Date: Day Month 2019}
+\appnotes{Application Note}
+
+\begin{document}
+\firstpage{1}
+
+\subtitle{Genetic and population analysis}
+
+\title[MPCC]{A Performant Matrix of Pearson$'$s Correlation Coefficient (MPCC) Calculations with Missing Data Support}
+\author[Arends \textit{et~al}.]{
+Danny Arends\,$^{\text{\sfb 1, $\dagger$}}$, 
+Mitch Horton\,$^{\text{\sfb 2, $\dagger$}}$ 
+Chad Burdyshaw\,$^{\text{\sfb 2, $\dagger$}}$ 
+Christian Fischer\,$^{\text{\sfb 3}}$ 
+Pjotr Prins\,$^{\text{\sfb 3}}$ 
+Rob W. Williams\,$^{\text{\sfb 3, *}}$ 
+, and Glen Brook\,$^{\text{\sfb 2, *}}$}
+\address{$^{\text{\sf 1}}$Z{\"u}chtungsbiologie und molekulare 
+Genetik, Albrecht Daniel Thaer-Institut, Berlin, 10115, Germany \\
+$^{\text{\sf 2}}$The Joint Institute for Computational Sciences, 
+University of Tennessee, Oak 
+Ridge, TN 37830, USA\\
+$^{\text{\sf 3}}$Genetics, Genomics and Informatics, University 
+of Tennessee Health Science Center, Memphis, TN 38163, USA.}
+
+\corresp{$^\dagger$Contributed equally and should be considered 
+joined first authors, $^\ast$To whom correspondence should be 
+addressed.}
+
+\history{Received on XXXXX; revised on XXXXX; accepted on XXXXX}
+
+\editor{Associate Editor: XXXXXXX}
+
+\abstract{\textbf{Motivation:} 
+The work presented is motivated by GeneNetwork.org, which performs 
+a matrix of Pearson$'$s Correlation Coefficient (PCC) calculations 
+in the presence of missing data to find relationships between and 
+among genotypes and phenotypes in mouse strains. The calculations 
+are a bottleneck for moderate to large problem sizes. Calculating 
+PCC is pervasive across bioinformatics, data analysis, 
+phylogenetics, statistics, stochastics, and xanthropology. Our 
+approach can be used anywhere a matrix of PCC calculations is 
+computed.\\
+\textbf{Results:} Our solution is a reformulation of the algorithm 
+such that it can be solved using matrix-matrix products and 
+achieves 4.3 TFlop/s in single precision (77\% of the theoretical 
+peak) on a single Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) 
+compute node. This translates to as much as a 100x speedup over the 
+previous approach and is independent of the percentage of missing 
+data.\\
+\textbf{Availability:} Code is available under an GPL-v3 
+licence for C++ and The R Project for Statistical 
+Computing at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
+\textbf{Contact:} \href{rwilliams@uthsc.edu}{rwilliams@uthsc.edu} or 
+\href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\
+\textbf{Supplementary information:} Supplementary data are 
+available at \textit{Bioinformatics} online.}
+
+\maketitle
+
+\section{Introduction}
+Biology has driven innovation in statistics from the early days. 
+Pearson, Fischer, Galton, and many other now famous statisticians 
+were all working on biological data. The mathematical formula 
+for Pearson$'$s correlation were derived by Auguste Bravais in 1844. 
+However, as Stigler's Law \citep{Stigler1980} dictates the name 
+of the method is crediting Karl Pearson, who was building on 
+ideas published by Francis Galton in the 1880s. 
+
+%\enlargethispage{12pt}
+
+Pearson$'$s correlation is one of the most used correlation algorithms in science. 
+It is used ubiquitously in all field of science ranging from agriculture to 
+zoology. Examples of large scale correlation computation can be found in many 
+areas of biology and bioinformatics. Genotype correlation are commonly used to 
+construct haplotypes, build genetic maps, and order markers within the genome. 
+Furthermore, PCCs have been used in co-expression analysis \citep{Tesson:2010}, 
+(genome wide) association analysis, and novel algortihms to reconstruct genetic 
+networks such as DiffCor \citep{Fukushima:2013}, weighted correlation network 
+analysis (WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL) mapping 
+\citep{Arends2016a}.
+
+The BxD family currently consists of 150 inbred mice, and the BxD phenome consists 
+of 7000 hand curated and well-integrated classical phenotypes, and over 100 'omics' 
+data sets. Almost all BXD expression and phenotype data is freely available on 
+\href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}, which provides 
+powerful statistical tools for data analysis, including Pearson$'$s correlation.
+
+PCC computation in the R language for statistical computing \citep{R:2005} is 
+provided by the $cor()$ function. The computation is implemented in C / C++ and 
+is relatively performant when no missing data is present. However, in the 
+presence of missing data different strategies on how-to deal with missing data 
+are provided. 
+
+Strategy 1 is to removes all rows that contain missing data, essentially 
+creating a full data set. This is unwanted in bioinformatics because missing 
+data is often omnipresent. Strategy 2 handles missing data on a case by case 
+basis. However, this strategy causes CPU branching on missing data, leading to 
+cache and branch prediction inefficiencies, significanly increasing runtime.
+
+An additional issue with the $cor()$ function is the inability to use 
+multi-threading capabilities provided by modern CPU hardware. This limitation 
+can be overcome by using the $parallel$ library. This library was created 
+out of CRAN packages $multicore$ \citep{Urbanek2009} and SNOW \citep{Tierney2003}. 
+The current implementation of the $parallel$ library starts up a new R instance 
+for each thread, adding significant overhead to multi-threaded computations.
+
+\vspace*{-6pt}
+
+\section{Approach}
+\subsection{Pearson$'$s Correlation Coefficient Calculation}
+When we say Pearson$'$s correlation coefficient, we mean:
+
+\begin{equation}
+%r=\frac{n\sum x_iy_i-\sum x_i\sum y_i}{((n\sum x_i^2-(\sum x_i)^2)(n\sum y_i^2-(\sum y_i)^2)^(1/2)}
+r=\frac{n\sum x_iy_i-\sum x_i\sum y_i}{((n\sum x_i^2-(\sum x_i)^2)(n\sum x_i^2-(\sum y_i)^2))}
+\end{equation}
+where $x$ and $y$ are vectors of length $n$, and $r$ is a real number between -1 and 1 inclusive.
+
+\subsection{The Naive Version}
+The Naive version of the PCC algorithm was developed to be identical 
+to the R $cor()$ function but with added modern multi-threading 
+support provided by OpenMP. Unlike the $parallel$ library, OpenMP 
+allows multi-threading without the need to start additional R 
+sessions, thus removing this additional overhead. The Naive version 
+allows to benchmark improvements gained by the Matrix version while 
+not having to compensate for the absence of multi-threading 
+support in the R $cor()$ function.
+
+Given $A$, an arbitrary number of vectors of length $n$, and $B$, an arbitrary number of vectors of length $n$, 
+we define the naive version like so:
+
+\vspace{2mm}
+
+\begin{algorithmic}[1]
+\FOR{Each vector  $i$ in set of vectors $A$}
+  \FOR{Each vector  $j$ in set of vectors $B$}
+    \STATE $m=n$
+    \STATE $SA_{ij}=SAA_{ij}=SB_{ij}=SBB_{ij}=SAB_{ij}=0$
+    \FOR{Each element $k$  in vectors $i$ and $j$}
+      \IF{element $k$ in vectors $i$ or $j$ missing}
+        \STATE Decrement vector length: $m=m-1$
+      \ELSE
+        \STATE $SA_{ij}+=A_{ik}$
+        \STATE $SB_{ij}+=B_{jk}$
+        \STATE $SAA_{ij}+=A_{ik}A_{ik}$
+        \STATE $SBB_{ij}+=B_{jk}B_{jk}$
+        \STATE $SAB_{ij}+=A_{ik}B_{jk}$
+      \ENDIF
+    \ENDFOR 
+    \STATE $R_{ij}=\frac{mSAB_{ij}-SA_{ij}SB_{ij}}{((mSAA_{ij}-(SA_{ij}SA_{ij})(mSBB_{ij}-(SB_{ij}SB_{ij}))}$
+  \ENDFOR
+\ENDFOR
+\end{algorithmic}
+
+\vspace{2mm}
+
+\noindent where $SA_{ij}$ is the sum of the elements of vector $i$ in $A$, 
+$SAA_{ij}$ is the sum of the elements squared of vector $i$ in $A$, 
+$SB_{ij}$ is the sum of the elements of vector $j$ in $B$, 
+$SBB_{ij}$ is the sum of the elements squared of vector $j$ in $B$, 
+$SAB_{ij}$ is the sum of the elements of vector $i$ in $A$ times the  elements of vector $j$ in $B$, 
+and $R_ij$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
+
+\subsection{The Matrix Version}
+We reformulated the naive version of the PCC algorithm into a series of 
+matrix-matrix products and element-wise matrix operations. The 
+reformulated algorithm is called the Matrix version. Optimizations 
+performed are itemized below, and further explained in the methods section.
+\vspace{2mm}
+
+\begin{algorithmic}[1]
+
+  \STATE $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$
+  \STATE $\sum A^2=\text{SGEMM(}A_Z^2,U_B\text{)}$
+  \STATE $\sum B=\text{SGEMM(}B_Z,U_A\text{)}$
+  \STATE $\sum B^2=\text{SGEMM(}B_Z^2,U_A\text{)}$
+  \STATE $\sum AB=\text{SGEMM(}A_Z,B_Z\text{)}$
+  
+  \vspace{2mm}
+
+  \STATE Compute $M\sum A^2$   (Element-wise multiplication)
+  \STATE Compute $M\sum B^2$   (Element-wise multiplication)
+  \STATE Compute $M\sum AB$   (Element-wise multiplication)
+  
+  \vspace{2mm}
+
+  \STATE $N_0=M\sum AB - \sum A\sum B$   (Element-wise subtraction)
+  \STATE $D_0=M\sum A^2 - \sum A\sum A$   (Element-wise subtraction)
+  \STATE $D_1=M\sum B^2 - \sum B\sum B$   (Element-wise subtraction)
+
+  \vspace{2mm}
+
+  \STATE $D_2=D_0 D_1 $   (Element-wise multiplication)
+  \STATE $D_3=\text{SQRT(}D_2\text{)}$   (Element-wise square root)
+
+  \vspace{2mm}
+
+  \STATE $P=N_0 / D_3$   (Element-wise division)
+  
+\end{algorithmic}
+
+\vspace{2mm}
+
+\noindent where  $A_Z$ is the set of vectors $A$ with a zero at every 
+missing data location, $A_Z^2$ is the result of squaring every element 
+of $A_Z$, $B_Z$ is the set of vectors $B$ with a zero at every 
+missing data location, $B_Z^2$ is the result of squaring every element 
+of $B_Z$, $M$ is a matrix whose $i, j$-th element is the number of 
+elements in the $i$-th vector of $A$, and the $j$-th vector of $B$ 
+such that there is no missing data in either $A$ or $B$, and $P$ is 
+a matrix of PCC calculations. All the other variables are self explanatory. \vspace*{-6pt}
+
+\subsection{Missing Data Bit-masking} \label{MDBM}
+
+To generate $M$ above, a bitmask for each vector in $A$ and for each vector in $B$, 
+is first initialized to all zeros then set to one in every position where there is missing data.
+Then, to find the number of positions where there is no missing data for a given vector $i$ 
+in $A$ and $j$ in $B$, a bitwise OR is done between the the corresponding bitmasks, and the 
+the number of zeros in the result is the size of the PCC calculation for those two vectors. \vspace*{-12pt}
+
+\begin{methods}
+\section{Methods}
+
+\subsection{Benchmark on BxD recombinant inbred lines}
+Data of N phenotypes was extracted from GeneNetwork, together with 
+X gene extression data sets, and the recently update genotypes for 
+the BxD family. PCC within and between gene expression data sets are 
+computed to build networks of co-expressed genes. PCC between 
+classical phenotypes and gene expression is commonly used to 
+indentify genes which might be involved in phenotype regulation. 
+Correlation between genotypes is used to build genetic maps and 
+build haplotypes. We benchmarked two different scenarios to show 
+the improvement of MPCC over the R $cor()$ function.
+
+{\bf Scenario 1:} Computation of PCC between all available genotypes 
+in the BxD strain. Since genotype data in the BxD family is almost 
+complete data, with only a few heterozygous (missing) loci remaining, 
+this scenario benchmarks MPCC versus $cor()$ when a limited amount of 
+missing data is present (Fig 1a).
+
+{\bf Scenario 2:} Computation of PCC between classical phenotypes and 
+multiple gene expression data sets available in GeneNetwork. This 
+benchmark scenario compared MPCC versus $cor()$ in the presence of 
+a lot of missing data since phenotypes are measured on a limited set 
+of strains. Gene expression data sets are added in a step-wise fashion 
+to increase the computational requirements in a step-wise fashion 
+(Fig 1b).
+
+The data sets analyzed during the current study are freely available in the 
+GeneNetwork repository, \href{https://genenetwork.org/}{GeneNetwork.org}
+
+\end{methods}
+
+\section{Results}
+Both the Naive and Matrix versions provide R interfaces designed as a drop-in 
+replacement for the $cor()$ function provided by R.
+
+The Naive version leverages a modern multi-threading OpenMP approach 
+to improve performance in comparison to the $cor()$ function provided 
+in R providing a consistent 3.5x speedup (56 core Intel Xeon E5-2680 
+v4 $@$ 2.40GHz - data not shown). 
+
+\vspace*{-6pt}
+
+\section{Discussion}
+The Naive version leverages a modern multi-threading OpenMP approach 
+to improve performance in comparison to the R $cor()$ function.
+
+The Matrix version heavily leverages the Intel\textregistered{} Math Kernel 
+Library (Intel\textregistered{} MKL) to obtain maximum performance 
+on Intel\textregistered{} systems. However, the advantages of the 
+matrix version are due to reduced computational complexity, and as 
+such independent of the underlying Basic Linear Algebra Subprograms 
+(BLAS) implementation used.
+
+Current work on the R-package is focused on using the OpenBLAS 
+library to provide a Free and Open-Source Software (FOSS) 
+alternative to the Intel\textregistered{} MKL. Future work will 
+investigate the feasibility of a GPU implementation to allow 
+for additional performance improvements.
+
+The missing data bit-masking approach outlined in section \ref{MDBM} 
+is implemented in C, and can be trivially generalized to other 
+algorithms which rely on matrix-matrix multiplication. \vspace*{-12pt}
+
+\section{Conclusion}
+
+Driven by demands in large data biology we optimized computation of Pearson$'$s 
+correlations to a new level. The MPCC algorithm will greatly reduce the 
+existing bottlenecks for many fields aiming to use this application at large 
+problem sizes. This is highly relevant for bioinformatics since so many 
+tools use Pearson$'$s correlations. 
+
+Additionally, the matrix version of the algorithm is unaffected by the 
+amount of missing data present in the data, a common problem in many 
+bioinformatics applications since missing data is ubiquitous and often 
+leads to reduced performance.
+
+A 100x speedup may sound modest, however, it means getting diagnostics 100x 
+faster, or use 1 computer instead of 100 significantly reducing costs for 
+computation. Our version can be used by any computer language which allows 
+calling C code. Furthermore, we provide an R package with a drop-in replacement 
+for the $cor()$ function in R.
+
+\section*{Funding}
+
+We thank the support of the UT Center for Integrative and Translational Genomics, 
+and funds from the UT-ORNL Governor's Chair, NIDA grant P30DA044223, NIAAA U01 
+AA013499 and U01 AA016662 for the work at UTHSC. \vspace*{-12pt}
+
+\bibliographystyle{natbib}
+%\bibliographystyle{achemnat}
+%\bibliographystyle{plainnat}
+%\bibliographystyle{abbrv}
+%\bibliographystyle{bioinformatics}
+
+%\bibliographystyle{plain}
+\bibliography{main}
+
+\end{document}

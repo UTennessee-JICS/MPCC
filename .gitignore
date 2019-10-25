@@ -11,3 +11,9 @@ src/Makevars
 src/symbols.rds
 src-i386/
 src-x64/
+main.aux
+main.dvi
+main.log
+main.pdf
+main.bbl
+main.blg
