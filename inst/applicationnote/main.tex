@@ -137,7 +137,9 @@ computational overhead.
 The Naive version of the MPCC algorithm was developed to be algorithmically identical 
 to the R $cor()$ function (Supplement 1 - 'The Naive Version'). Multi-threading 
 support without additional overhead is provided by OpenMP. The Naive version 
-provides a fair multi-threaded baseline against the Matrix version.\\
+provides a fair multi-threaded baseline against the Matrix version. It also provides 
+a multi-threaded fallback in R when no Intel\textregistered{} Math Kernel Library 
+(Intel\textregistered{} MKL) is available.\\
 \textbf{The Matrix Version}\\
 The Matrix version reformulates the naive version of the PCC algorithm 
 into a series of matrix-matrix products and element-wise matrix operations. 
@@ -175,9 +177,8 @@ algorithm. Additionally, while MPCC is missing data agnostic, increasing amounts
 of missing data show an increased performance for MPCC.
 \vspace*{-5mm}
 \section{Discussion}
-The Matrix version heavily leverages the Intel\textregistered{} Math Kernel 
-Library (Intel\textregistered{} MKL) to obtain maximum performance 
-on Intel\textregistered{} systems. The performance of the 
+The Matrix version heavily leverages the Intel\textregistered{} MKL to obtain 
+maximum performance on Intel\textregistered{} systems. The performance of the 
 matrix version is due in part to the high arithmetic intensity of the 
 matrix-matrix product algorithm, on which it is based, and in 
 part to the fact that the MKL matrix-matrix product algorithm is highly 
