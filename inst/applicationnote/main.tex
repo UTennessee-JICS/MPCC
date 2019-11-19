@@ -86,11 +86,11 @@ reconstruction of genetic networks \citep{Fukushima:2013}, weighted correlation
 network analysis (WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL) 
 mapping \citep{Arends2016a}.
 
-The BxD family is a panel of 150 recombinant inbred mice, and the BxD phenome consists 
-of 7000 hand curated classical phenotypes, genotypes for all lines, and over 100 
-'omics' data sets. Almost all BXD phenotype, genotype and expression data is freely 
-available on \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}, which 
-provides tools for data analysis, including Pearson$'$s correlation.
+The BxD family is a panel of 150 recombinant inbred mice, and the BxD data collection 
+consists of 7000 hand curated classical phenotypes, high-density genotypes, and over 
+100 'omics' data sets. All BXD phenotype, genotype, and omics data is freely available on 
+\href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}. GeneNetwork is an 
+online platform for data storage and analysis, including Pearson$'$s correlation.
 
 Computation of Pearson$'$s correlations in the R language for statistical computing 
 \citep{R:2005} is provided by the $cor()$ function. It is implemented in C++ and is 
@@ -98,7 +98,7 @@ relatively performant when no missing data is present. In the presence of missin
 data, two strategies are used to deal with the missing data.
 
 Consider the case where, for a set of individuals, an autocorrelation is done 
-amongst the same set of phenotypes for those individuals. Strategy 1 is to remove 
+amongst the set of phenotypes for those individuals. Strategy 1 is to remove 
 all individuals that contain any missing phenotype data. This is undesirable in 
 biological data because often there are no individuals without at least some 
 missing data. Strategy 2 handles missing data on a case by case basis, 
