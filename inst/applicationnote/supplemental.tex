@@ -1,4 +1,11 @@
-\subsection{Pearson$'$s Correlation Coefficient}
+\documentclass{bioinfo}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
+\begin{document}
+\title[Supplemental file 1]{Supplemental file to the MPCC paper}
+
+\section{Pearson$'$s Correlation Coefficient}
 When we say Pearson$'$s correlation coefficient, we mean:
 
 \begin{equation}
@@ -7,7 +14,7 @@ r=\frac{n\sum x_iy_i-\sum x_i\sum y_i}{((n\sum x_i^2-(\sum x_i)^2)(n\sum x_i^2-(
 \end{equation}
 where $x$ and $y$ are vectors of length $n$, and $r$ is a real number between -1 and 1 inclusive.
 
-\subsection{The Naive Version}
+\section{The Naive Version}
 
 Given $A$, an arbitrary number of vectors of length $n$, and $B$, an arbitrary number of vectors of length $n$, 
 we define the naive version like so:
@@ -46,7 +53,7 @@ squared of vector $j$ in $B$, and
 of vector $i$ in $A$ times the  elements of vector $j$ in $B$, respectively.
 Note that $R_{ij}$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
 
-\subsection{The Matrix Version}
+\section{The Matrix Version}
 
 \begin{algorithmic}[1]
 
@@ -88,10 +95,12 @@ elements in the $i$-th vector of $A$, and the $j$-th vector of $B$
 such that there is no missing data in either $A$ or $B$, and $P$ is 
 a matrix of PCC calculations. All the other variables are self explanatory.
 
-\subsection{Missing Data Bit-masking} \label{MDBM}
+\section{Missing Data Bit-masking} \label{MDBM}
 
 To generate $M$ above, a bitmask for each vector in $A$ and for each vector in $B$, 
 is first initialized to all zeros then set to one in every position where there is missing data.
 Then, to find the number of positions where there is no missing data for a given vector $i$ 
 in $A$ and $j$ in $B$, a bitwise OR is done between the the corresponding bitmasks, and the 
 the number of zeros in the result is the size of the PCC calculation for those two vectors.
+
+\end{document}
