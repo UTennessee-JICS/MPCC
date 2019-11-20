@@ -93,7 +93,7 @@ Computation of Pearson$'$s correlations in the R language for statistical comput
 relatively performant when no missing data is present. In the presence of missing 
 data, two strategies are used to deal with the missing data.
 
-Consider the case where, for a set of individuals, an autocorrelation is done 
+Consider the case where, for a set of individuals, pairwise correlation is done 
 amongst the set of phenotypes for those individuals. Strategy 1 is to remove 
 all individuals that contain any missing phenotype data. This is undesirable in 
 biological data because often there are no individuals without at least some 
@@ -111,7 +111,7 @@ computational overhead.
   \vspace*{-7mm}
   \caption{
     Genotype to genotype correlation between genetic markers on chromosome 
-    1 of the BxD family. autocorrelation between all 7321 marker was \textasciitilde{}6 times 
+    1 of the BxD family. Pairwise correlation between all 7321 marker was \textasciitilde{}6 times 
     faster using MPCC.
   }
   \label{fig:fig1}
@@ -146,7 +146,7 @@ in detail in Supplement 1 - 'The Matrix Version' and 'Missing Data Bit-masking'.
 \begin{methods}
 \section{Methods}
 Two scenarios were designed to benchmark MPCC.\\
-{\bf Scenario 1:} autocorrelation between genotypes of the BxD family. 
+{\bf Scenario 1:} Pairwise correlation between genotypes of the BxD family. 
 Genotype data in the BxD family is almost complete, with only a few heterozygous 
 (missing) loci remaining, this scenario benchmarks MPCC versus $cor()$ when a limited 
 amount of missing data is present.\\
