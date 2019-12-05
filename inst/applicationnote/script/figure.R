@@ -63,17 +63,28 @@ axis(1, at = seq(0, 195, 25), round(seq(0, 195, 25), 0))
 axis(2, at = seq(0, 195, 25), round(seq(0, 195, 25), 0), las=2)
 legend("bottomright", legend = format(round(seq(1, -1, -0.5),2), nsmall = 2), fill = rev(colorRampPalette(mypalette)(length(seq(-1, 1, 0.5)))), bg = "white", border = "white")
 
+setwd("D:/Ddrive/Github/MPCC/inst/applicationnote/script")
+speedupData <- read.table("comparison_matrix.csv", sep="\t", header=TRUE)
 
-Speedup <- c(0, 25, 65, 75, 85, 95)
-Dimension <- c(10, 250, 1000, 2000, 4000, 8000)
-plot(c(0,9000), c(0, 100), t = 'n', xlab= "Matrix Dimensions (n^2)", ylab= "Speedup", main="Runtime speedup of MPCC versus cor()", xaxt='n', yaxt='n', xaxs='i', yaxs='i')
+unique(speedupData[, "mat_dim"])
+
+#Speedup <- c(0, 25, 65, 75, 85, 95)
+Dimension <- unique(speedupData[, "mat_dim"])
+plot(c(0,9000), c(0, 120), t = 'n', xlab= "Matrix Dimensions (n^2)", ylab= "Speedup", main="Runtime speedup of MPCC versus cor()", xaxt='n', yaxt='n', xaxs='i', yaxs='i')
 axis(1, at = seq(0, 9000, 1000), seq(0, 9000, 1000), 0)
-axis(2, at = seq(0, 100, 20), seq(0, 100, 20), las=2)
-for(h in seq(20, 100, 20)){ abline(h = h, col="gray"); }
+axis(2, at = seq(0, 120, 20), seq(0, 120, 20), las=2)
+for(h in seq(20, 160, 20)){ abline(h = h, col="gray"); }
 for(v in seq(1000, 9000, 1000)){ abline(v = v, col="gray"); }
-points(x = Dimension, y = Speedup, t = 'b', pch=19)
+cnt <- 1
+for(x in c(0.05, 0.1, 0.25, 0.5)){
+  subspeed <- speedupData[speedupData[, "pct_miss_data"] == x,]
+  Speedup <- subspeed[, "timeRCOR"] / subspeed[, "timeMPCC"]
+  Speedup[Speedup == Inf] <- 1
+  points(x = Dimension, y = Speedup, t = 'b', pch=19, col=cnt)
+  cnt = cnt + 1
+}
 box()
-legend("bottomright", legend = c("5% missing"), lwd=1, pch=19, col="black", bg = "white", border = "white")
+legend("topleft", legend = c("5%","10%","25%","50%"), lwd=1, pch=19, col=1:4, bg = "white", border = "white")
 
 
 #

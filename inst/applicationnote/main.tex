@@ -122,8 +122,10 @@ computational overhead.
   \vspace*{-7mm}
   \caption{
     Runtime speedup of MPCC versus the R $cor$ function shows 
-    increasing speedup with growing matrix sizes, as well as improved 
-    speedup with increasing amount of missing data. 
+    increasing speedup with growing matrix sizes. However, 
+    speedup is negatively affected by increasing percentage of 
+    missing data, because of increased computational load in the 
+    missing data preparation step.
   }
   \label{fig:fig2}
   \vspace*{-5mm}
@@ -150,9 +152,9 @@ Two scenarios were designed to benchmark MPCC.\\
 Genotype data in the BxD family is almost complete, with only a few heterozygous 
 (missing) loci remaining, this scenario benchmarks MPCC versus $cor()$ when a limited 
 amount of missing data is present.\\
-{\bf Scenario 2:} Single core speedup computation of MPCC versus $cor()$ in the 
-presence of a increasing amounts of missing data. Matrix sizes are increased in a 
-step-wise fashion to increase computational load.
+{\bf Scenario 2:} Speedup computation of MPCC versus $cor()$ in the presence of a 
+increasing amounts of missing data. Matrix sizes are increased in a step-wise fashion 
+to increase computational load.
 \end{methods}
 \vspace*{-2mm}
 \section{Results}
@@ -166,11 +168,10 @@ v4 $@$ 2.40GHz - data not shown).
 Using MPCC to compute genotype to genotype correlations (Fig \ref{fig:fig1}) leads to 
 an \textasciitilde{}6x speedup compared to the $cor()$ function provided in R.
 
-Single core performance of MPCC compared to the $cor()$ function, shows upto a 
-100 times reduction in runtime (Fig \ref{fig:fig2}). With increasing matrix sizes 
+Multicore performance (40 cores) of MPCC compared to the $cor()$ function, shows upto a 
+120 times reduction in runtime (Fig \ref{fig:fig2}). With increasing matrix sizes 
 the MPCC algorithm achieves an increasing speedup due to the optimized algorithm. 
-Additionally, while MPCC is missing data agnostic, increasing amounts of missing 
-data show an increased speedup for MPCC.
+However, increasing amounts of missing data show a decreased speedup for MPCC.
 \vspace*{-5mm}
 \section{Discussion}
 The Matrix version heavily leverages the Intel\textregistered{} MKL to obtain 
@@ -194,7 +195,7 @@ large problem sizes. The Matrix version is unaffected by the amount of
 missing data, a common issue in bioinformatics, since missing data is 
 ubiquitous and leads to reduced performance.
 
-A 100x speedup allows researchers to tackle many problems that could 
+A 120x speedup allows researchers to tackle many problems that could 
 not have been attempted before. MPCC can be used by any language which 
 allows calling C code. Furthermore, an R package with a drop-in 
 replacement for the $cor()$ function is provided.
