@@ -47,9 +47,8 @@ approach can be used whenever a PCC matrix is computed.\\
 such that the lion's share of the computation is done using matrix-matrix products and
 achieves 4.3 TFlop/s in single precision (77\% of the theoretical 
 peak) on a single Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) 
-cpu. This translates to as much as a 100x speedup over the 
-previous approach and is independent of the percentage of missing 
-data.\\
+cpu. This translates to as much as a 120x speedup over the 
+previous approach.\\
 \textbf{Availability:} Code is available for C\raise .8ex \hbox{$_{++}$} and The R Project for Statistical 
 Computing, under an GPL-v3 licence  at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
 \textbf{Contact:} \href{rwilliams@uthsc.edu}{rwilliams@uthsc.edu} or 
@@ -161,25 +160,27 @@ to increase computational load.
 Both the Naive and Matrix versions provide R interfaces designed as a drop-in 
 replacement for the $cor()$ function provided by R.
 
+Using MPCC to compute genotype to genotype correlations (Fig \ref{fig:fig1}) 
+showed a \textasciitilde{}5 times reduction in runtime compared to the 
+$cor()$ function provided in R.
+
+With increasing matrix sizes  MPCC achieves an increasing speedup. However, 
+increasing amounts of missing data show a decreased speedup for MPCC, due 
+to missing Data Bit-masking. Multicore performance (40 threads) of MPCC 
+compared to the $cor()$ function, shows an 120 times reduction in runtime 
+when 5% of data is missing, single core performance shows a 7.5 times 
+speedup (Fig \ref{fig:fig2}). 
+
 The Naive version using OpenMP to improve performance in comparison to the 
 $cor()$ function provides a consistent 3.5x speedup (56 core Intel Xeon E5-2680 
 v4 $@$ 2.40GHz - data not shown).
-
-Using MPCC to compute genotype to genotype correlations (Fig \ref{fig:fig1}) leads to 
-an \textasciitilde{}6x speedup compared to the $cor()$ function provided in R.
-
-Multicore performance (40 cores) of MPCC compared to the $cor()$ function, shows upto a 
-120 times reduction in runtime (Fig \ref{fig:fig2}). With increasing matrix sizes 
-the MPCC algorithm achieves an increasing speedup due to the optimized algorithm. 
-However, increasing amounts of missing data show a decreased speedup for MPCC.
 \vspace*{-5mm}
 \section{Discussion}
 The Matrix version heavily leverages the Intel\textregistered{} MKL to obtain 
-maximum performance on Intel\textregistered{} systems. The performance of the 
+maximum performance on Intel\textregistered{} systems. Performance of the 
 matrix version is due in part to the high arithmetic intensity of the 
-matrix-matrix product algorithm, on which it is based, and in 
-part to the fact that the MKL matrix-matrix product algorithm is highly 
-optimized for Intel architectures.  
+matrix-matrix product algorithm, and in part to the fact that the MKL 
+matrix-matrix product algorithm is highly optimized.  
 
 The missing data approach (Supplement 1 - 'Missing Data Bit-masking') can be 
 trivially generalized to other algorithms which rely on matrix-matrix multiplication.
@@ -191,9 +192,7 @@ feasibility of a GPU implementation.
 \section{Conclusion}
 Driven by demands in large data biology, computation of PCC was optimized. 
 MPCC greatly reduces the existing bottlenecks for many fields faced with 
-large problem sizes. The Matrix version is unaffected by the amount of 
-missing data, a common issue in bioinformatics, since missing data is 
-ubiquitous and leads to reduced performance.
+large problem sizes.
 
 A 120x speedup allows researchers to tackle many problems that could 
 not have been attempted before. MPCC can be used by any language which 

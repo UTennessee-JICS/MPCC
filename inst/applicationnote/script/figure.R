@@ -78,13 +78,16 @@ for(v in seq(1000, 9000, 1000)){ abline(v = v, col="gray"); }
 cnt <- 1
 for(x in c(0.05, 0.1, 0.25, 0.5)){
   subspeed <- speedupData[speedupData[, "pct_miss_data"] == x,]
-  Speedup <- subspeed[, "timeRCOR"] / subspeed[, "timeMPCC"]
+  Speedup <- subspeed[, "timeRCOR"] / subspeed[, "MPCC_nthreads.40_only_A_missing"]
   Speedup[Speedup == Inf] <- 1
   points(x = Dimension, y = Speedup, t = 'b', pch=19, col=cnt)
+  Speedup <- subspeed[, "timeRCOR"] / subspeed[, "timeMPCC"]
+  Speedup[Speedup == Inf] <- 1
+  points(x = Dimension, y = Speedup, t = 'b', lty=2, pch=15, col=cnt)
   cnt = cnt + 1
 }
 box()
-legend("topleft", legend = c("5%","10%","25%","50%"), lwd=1, pch=19, col=1:4, bg = "white", border = "white")
+legend("topleft", legend = c("5%","10%","25%","50%", "threads: 1", "threads: 40"), fill=c(1:4, NA, NA), lty=c(NA,NA,NA,NA,2,1), pch=c(NA,NA,NA,NA, 15, 19), bg = "white", border = "white")
 
 
 #
