@@ -54,7 +54,9 @@ of vector $i$ in $A$ times the  elements of vector $j$ in $B$, respectively.
 Note that $R_{ij}$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
 
 \section{The Matrix Version}
-
+The matrix version of PCC assembles the same Rij expression as the naive version (line 16), 
+but does so in a bulk fashion, computing the various terms in large chunks independently
+and then assembling the PCC expression at the end.
 \begin{algorithmic}[1]
 
   \STATE $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$
@@ -86,21 +88,37 @@ Note that $R_{ij}$ is the PCC of vector $i$ of $A$ and vector $j$ of $B$.
   
 \end{algorithmic}
 
-\noindent where  $A_Z$ is the set of vectors $A$ with a zero at every 
-missing data location, $A_Z^2$ is the result of squaring every element 
-of $A_Z$, $B_Z$ is the set of vectors $B$ with a zero at every 
-missing data location, $B_Z^2$ is the result of squaring every element 
-of $B_Z$, $M$ is a matrix whose $i, j$-th element is the number of 
+\noindent Where $A_Z$ is the set of vectors $A$ with a zero at every missing data location.
+$U_B$ is a masking matrix of $1's$ with $0's$ in the locations in which matrix $B$ has missing data. 
+$U_A$ is a masking matrix of $1's$ with $0's$ in the locations in which matrix $A$ has missing data.
+$A_Z^2$ is the result of squaring every element of $A_Z$, 
+$B_Z$ is the set of vectors $B$ with a zero at every missing data location, 
+$B_Z^2$ is the result of squaring every element of $B_Z$, 
+$M$ is a matrix whose $i, j$-th element is the number of 
 elements in the $i$-th vector of $A$, and the $j$-th vector of $B$ 
 such that there is no missing data in either $A$ or $B$, and $P$ is 
-a matrix of PCC calculations. All the other variables are self explanatory.
+a matrix of PCC calculations. 
 
 \section{Missing Data Bit-masking} \label{MDBM}
+In the summation functions of the Matrix version (lines 1-4), we use use masking matrices to compute 
+sums efficiently. For example: $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$, where $A_Z$ is the set of 
+vectors $A$ with a zero at every missing data location, and $U_B$ is a matrix of $1's$ with $0's$ 
+at the locations in which matrix $B$ has missing data. By using this masking matrix, we convert a 
+three level iterative loop over all elements in both $A$ and $B$ matrices with a conditional check 
+for every element pair in the summation into a simple and efficient matrix-matrix multiplication.
 
-To generate $M$ above, a bitmask for each vector in $A$ and for each vector in $B$, 
+Omitted from the matrix version algorithm presented above are the preprocessing steps necessary to 
+assemble missing data masks $U_A$ and $U_B$ , which are then used in the summations of lines 1-4.
+Assembling the missing data masks involves a two level nested loop over both matrices $A$ and $B$ in 
+which a check for missing data occurs which zeros out elements at the location of missing data for 
+each of the matrices $A$, $B$, $U_A$, and $U_B$.
+
+In addition, in the same double nested loops described for the missing data masks, to 
+generate $M$ above, a separate bitmask for each vector in $A$ and for each vector in $B$, 
 is first initialized to all zeros then set to one in every position where there is missing data.
 Then, to find the number of positions where there is no missing data for a given vector $i$ 
-in $A$ and $j$ in $B$, a bitwise OR is done between the the corresponding bitmasks, and the 
-the number of zeros in the result is the size of the PCC calculation for those two vectors.
+in $A$ and $j$ in $B$ (i.e. a valid correlation), a bitwise OR is done between the the corresponding bitmasks, 
+and a bitsum on the result is subtracted from the size of the vector to determine the number of valid
+pairwise correlations for each vector comparison between $A$ and $B$. 
 
 \end{document}
