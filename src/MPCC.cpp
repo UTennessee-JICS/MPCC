@@ -260,7 +260,7 @@ int pcc_matrix(int m, int n, int p,
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
-  unsigned long *M = (unsigned long *) mkl_calloc( m*p, sizeof( unsigned long ), 64 );
+  DataType *M = (DataType *) mkl_calloc( m*p, sizeof( DataType ), 64 );
   __assume_aligned(M, 64);
   DataType* SA =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SA, 64);
@@ -280,9 +280,9 @@ int pcc_matrix(int m, int n, int p,
   __assume_aligned(UnitA, 64);
   DataType* UnitB = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
   __assume_aligned(UnitB, 64);  
-  unsigned long *amask=(unsigned long*)mkl_calloc( m*stride, sizeof(unsigned long), 64);
+  DataType *amask=(DataType*)mkl_calloc( m*n, sizeof(DataType), 64);
   __assume_aligned(amask, 64);
-  unsigned long *bmask=(unsigned long*)mkl_calloc( p*stride, sizeof(unsigned long), 64);
+  DataType *bmask=(DataType*)mkl_calloc( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
 
   //info("after calloc\n",1);
@@ -321,18 +321,18 @@ int pcc_matrix(int m, int n, int p,
     
     //initialize data mask for matrix A to 0's
     #pragma omp parallel for private (i)
-    for (i=0; i< m*stride; i++) { amask[ i ]=0UL; }
+    for (i=0; i< m*n; i++) { amask[ i ]=1; }
 
     //initialize data mask for matrix B to 0's
     #pragma omp parallel for private (j)   
-    for (j=0; j< p*stride; j++) { bmask[ j ]=0UL; }
+    for (j=0; j< p*n; j++) { bmask[ j ]=1; }
 
     //if element in A is missing, flip bit of corresponding col to 1
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
         if (CHECKNA(A[i*n+k])) {
-          amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
+          amask[i*n+k] = 0;
         }
       }
     }
@@ -344,36 +344,13 @@ int pcc_matrix(int m, int n, int p,
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {	
         if (CHECKNA(B[j*n+k])) {
-          bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
+          bmask[j*n+k] = 0;
         }
       }
     }
 
-    //For all A,B pairs if either A or B has a missing data bit set,
-    // a logical OR between row A[i] and column B[j] row bit masks will
-    // return a 1 in the bit mask M[i,j]
-    // For each row*col pair in A*B comparison, sum up the number of missing values using the bitstring
-    #pragma omp parallel for private (i,j,k)
-    for (i=0; i<m; i++){
-      for (j=0; j<p; j++){
-        for(k=0; k<stride; ++k){
-          M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
-        }
-      }
-    }
-
-    //Compute the number of non missing data for every row/column pair.
-    //This is done by subtracting the number of elements in a row by the number of
-    // missing data bits set for the row/column pair.
-    unsigned long ul_n = n;
-    #pragma omp parallel for private(i)
-    for(i=0; i<m*p; i++){
-      N[i] = (ul_n-M[i]);
-      //if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
-    }
-    //info("Call mkl_free\n",1);
-    mkl_free(M);
-    //info("After Call mkl_free\n",1);
+    GEMM(CblasRowMajor, CblasNoTrans, CblasTrans,
+         m, p, n, alpha, amask, n, bmask, n, beta, N, p);
 
     //Zero out values that are marked as missing.
     // For subsequent calculations of PCC terms, we need to replace
