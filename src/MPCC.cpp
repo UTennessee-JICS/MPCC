@@ -306,7 +306,7 @@ int pcc_matrix(int m, int n, int p,
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
 
-    //if element in A is missing, set to 0
+    //if element in A is missing, set amask and A to 0
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
@@ -320,7 +320,7 @@ int pcc_matrix(int m, int n, int p,
       }
     }
 
-    //if element in B is missing, set to 0
+    //if element in B is missing, set bmask and B to 0
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {
@@ -370,7 +370,7 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
-    //SB = UnitA*B
+    //SB = B*UnitA
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
