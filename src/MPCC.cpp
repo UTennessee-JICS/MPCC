@@ -306,36 +306,21 @@ int pcc_matrix(int m, int n, int p,
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
 
-    //If element in A or B has missing data,
-    // add a 1 to the bit column k location for row i
-    
-    //initialize data mask for matrix A to 0's
-    #pragma omp parallel for private (i)
-    for (i=0; i< m*n; i++) { amask[ i ]=1; }
-
-    //initialize data mask for matrix B to 0's
-    #pragma omp parallel for private (j)   
-    for (j=0; j< p*n; j++) { bmask[ j ]=1; }
-
-    //if element in A is missing, flip bit of corresponding col to 1
+    //if element in A is missing, set to 0
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
-        if (CHECKNA(A[i*n+k])) {
-          amask[i*n+k] = 0;
-        }
+        amask[ i*n + k ] = 1;
+        if (CHECKNA(A[i*n+k])) { amask[i*n + k] = 0; }
       }
     }
 
-    //printf("p=%d n=%d\n",p,n);
-
-    //if element in B is missing, flip bit of corresponding col to 1
+    //if element in B is missing, set to 0
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
-      for (k=0; k<n; k++) {	
-        if (CHECKNA(B[j*n+k])) {
-          bmask[j*n+k] = 0;
-        }
+      for (k=0; k<n; k++) {
+        bmask[ j*n + k ] = 1;
+        if (CHECKNA(B[j*n+k])) { bmask[j*n + k] = 0; }
       }
     }
 
