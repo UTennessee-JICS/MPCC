@@ -310,8 +310,13 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
-        amask[ i*n + k ] = 1;
-        if (CHECKNA(A[i*n+k])) { amask[i*n + k] = 0; }
+        amask[ i*n + k ] = 1.0;
+        if (CHECKNA(A[i*n+k])) { 
+          amask[i*n + k] = 0.0;
+          A[i*n + k] = 0.0; // set A to 0.0 for subsequent calculations of PCC terms
+        }else{
+          UnitA[i*n + k]=1;
+        }
       }
     }
 
@@ -320,37 +325,22 @@ int pcc_matrix(int m, int n, int p,
     for (j=0; j<p; j++) {
       for (k=0; k<n; k++) {
         bmask[ j*n + k ] = 1;
-        if (CHECKNA(B[j*n+k])) { bmask[j*n + k] = 0; }
+        if (CHECKNA(B[j*n+k])) { 
+          bmask[j*n + k] = 0;
+          B[j*n + k] = 0; // set B to 0.0 for subsequent calculations of PCC terms
+        }else{
+          UnitB[j*n + k] = 1;
+        }
       }
     }
 
     GEMM(CblasRowMajor, CblasNoTrans, CblasTrans,
          m, p, n, alpha, amask, n, bmask, n, beta, N, p);
 
-    //Zero out values that are marked as missing.
-    // For subsequent calculations of PCC terms, we need to replace
-    // missing value markers with 0 in matrices so that they dont contribute to 
-    // the sums
-    #pragma omp parallel for private(i)
-    for (i=0; i<m*n; i++) {
-      if (CHECKNA(A[i])) { A[i]=0.0; }
-      else{ UnitA[i]=1; }
-    }
-    //info("VSQR\n",1);
+
     //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
 
-    //info("before zero out\n",1);
-
-    //Zero out values that are marked as missing.
-    // For subsequent calculations of PCC terms, we need to replace
-    // missing value markers with 0 in matrices so that they dont contribute to
-    // the sums
-    #pragma omp parallel for private(j)
-    for (j=0; j<n*p; j++) {
-      if (CHECKNA(B[j])) { B[j]=0.0; }
-      else{ UnitB[j]=1; }
-    }
     //vsSqr(n*p,B,BB);
     VSQR(n*p,B,BB);
 
