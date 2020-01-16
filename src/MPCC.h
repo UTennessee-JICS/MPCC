@@ -58,18 +58,20 @@
 
   #if DOUBLE
     #define DataType double
-    #define GEMM cblas_dgemm
-    #define AXPY cblas_daxpy
     #ifdef NOMKL // Use our MKL substitution functions
       #define VSQR vSqr
       #define VMUL vMul
       #define VSQRT vSqrt
       #define VDIV vDiv
+      #define GEMM dgemm_
+      #define AXPY daxpy_
     #else // Use MKL functions
       #define VSQR vdSqr
       #define VMUL vdMul
       #define VSQRT vdSqrt
       #define VDIV vdDiv
+      #define GEMM cblas_dgemm
+      #define AXPY cblas_daxpy
     #endif
   #else
     #define DataType float
