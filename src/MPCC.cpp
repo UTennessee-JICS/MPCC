@@ -248,7 +248,8 @@ int pcc_matrix(int m, int n, int p,
   bool transposeB = true; //assume this is always true. 
   //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
-  DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
+  int mp = m*p;
+  DataType *N = (DataType *) ALLOCATOR( mp,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
   DataType *M = (DataType *) ALLOCATOR( m*p, sizeof( DataType ), 64 );
   __assume_aligned(M, 64);
