@@ -34,16 +34,6 @@ static DataType TimeSpecToNanoSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec*1000000000.0 + (DataType)ts->tv_nsec;
 }
 
-// This function is an implementation of a bitsum of an unsigned long n;
-// same as popcount64 algorithm
-int bitsum(unsigned long n)
-{
-   int count;
-   for (count=0; n; count++)
-      n &= n - 1;
-   return count;
-}
-
 // This function convert a string to datatype (double or float);
 DataType convert_to_val(string text)
 {
@@ -260,7 +250,7 @@ int pcc_matrix(int m, int n, int p,
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
-  unsigned long *M = (unsigned long *) mkl_calloc( m*p, sizeof( unsigned long ), 64 );
+  DataType *M = (DataType *) mkl_calloc( m*p, sizeof( DataType ), 64 );
   __assume_aligned(M, 64);
   DataType* SA =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SA, 64);
@@ -280,9 +270,9 @@ int pcc_matrix(int m, int n, int p,
   __assume_aligned(UnitA, 64);
   DataType* UnitB = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
   __assume_aligned(UnitB, 64);  
-  unsigned long *amask=(unsigned long*)mkl_calloc( m*stride, sizeof(unsigned long), 64);
+  DataType *amask=(DataType*)mkl_calloc( m*n, sizeof(DataType), 64);
   __assume_aligned(amask, 64);
-  unsigned long *bmask=(unsigned long*)mkl_calloc( p*stride, sizeof(unsigned long), 64);
+  DataType *bmask=(DataType*)mkl_calloc( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
 
   //info("after calloc\n",1);
@@ -316,89 +306,41 @@ int pcc_matrix(int m, int n, int p,
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
 
-    //If element in A or B has missing data,
-    // add a 1 to the bit column k location for row i
-    
-    //initialize data mask for matrix A to 0's
-    #pragma omp parallel for private (i)
-    for (i=0; i< m*stride; i++) { amask[ i ]=0UL; }
-
-    //initialize data mask for matrix B to 0's
-    #pragma omp parallel for private (j)   
-    for (j=0; j< p*stride; j++) { bmask[ j ]=0UL; }
-
-    //if element in A is missing, flip bit of corresponding col to 1
+    //if element in A is missing, set amask and A to 0
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
-        if (CHECKNA(A[i*n+k])) {
-          amask[i*stride +k/64] |= (1UL << (n-k-1)%64);
+        amask[ i*n + k ] = 1.0;
+        if (CHECKNA(A[i*n+k])) { 
+          amask[i*n + k] = 0.0;
+          A[i*n + k] = 0.0; // set A to 0.0 for subsequent calculations of PCC terms
+        }else{
+          UnitA[i*n + k] = 1.0;
         }
       }
     }
 
-    //printf("p=%d n=%d\n",p,n);
-
-    //if element in B is missing, flip bit of corresponding col to 1
+    //if element in B is missing, set bmask and B to 0
     #pragma omp parallel for private (j,k)
     for (j=0; j<p; j++) {
-      for (k=0; k<n; k++) {	
-        if (CHECKNA(B[j*n+k])) {
-          bmask[j*stride +k/64] |= (1UL << (n-k-1)%64);
+      for (k=0; k<n; k++) {
+        bmask[ j*n + k ] = 1.0;
+        if (CHECKNA(B[j*n+k])) { 
+          bmask[j*n + k] = 0.0;
+          B[j*n + k] = 0.0; // set B to 0.0 for subsequent calculations of PCC terms
+        }else{
+          UnitB[j*n + k] = 1.0;
         }
       }
     }
 
-    //For all A,B pairs if either A or B has a missing data bit set,
-    // a logical OR between row A[i] and column B[j] row bit masks will
-    // return a 1 in the bit mask M[i,j]
-    // For each row*col pair in A*B comparison, sum up the number of missing values using the bitstring
-    #pragma omp parallel for private (i,j,k)
-    for (i=0; i<m; i++){
-      for (j=0; j<p; j++){
-        for(k=0; k<stride; ++k){
-          M[i*p+j] += bitsum((amask[ i*stride+k ] | bmask[ j*stride+k ]));
-        }
-      }
-    }
+    GEMM(CblasRowMajor, CblasNoTrans, CblasTrans,
+         m, p, n, alpha, amask, n, bmask, n, beta, N, p);
 
-    //Compute the number of non missing data for every row/column pair.
-    //This is done by subtracting the number of elements in a row by the number of
-    // missing data bits set for the row/column pair.
-    unsigned long ul_n = n;
-    #pragma omp parallel for private(i)
-    for(i=0; i<m*p; i++){
-      N[i] = (ul_n-M[i]);
-      //if(std::isnan(N[i])) {printf("N[%d]=%e\n",i,N[i]); N[i]=1;}
-    }
-    //info("Call mkl_free\n",1);
-    mkl_free(M);
-    //info("After Call mkl_free\n",1);
 
-    //Zero out values that are marked as missing.
-    // For subsequent calculations of PCC terms, we need to replace
-    // missing value markers with 0 in matrices so that they dont contribute to 
-    // the sums
-    #pragma omp parallel for private(i)
-    for (i=0; i<m*n; i++) {
-      if (CHECKNA(A[i])) { A[i]=0.0; }
-      else{ UnitA[i]=1; }
-    }
-    //info("VSQR\n",1);
     //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
 
-    //info("before zero out\n",1);
-
-    //Zero out values that are marked as missing.
-    // For subsequent calculations of PCC terms, we need to replace
-    // missing value markers with 0 in matrices so that they dont contribute to
-    // the sums
-    #pragma omp parallel for private(j)
-    for (j=0; j<n*p; j++) {
-      if (CHECKNA(B[j])) { B[j]=0.0; }
-      else{ UnitB[j]=1; }
-    }
     //vsSqr(n*p,B,BB);
     VSQR(n*p,B,BB);
 
@@ -428,7 +370,7 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
-    //SB = UnitA*B
+    //SB = B*UnitA
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
@@ -445,7 +387,7 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
-    //SBB = UnitA*BB
+    //SBB = BB*UnitA
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
