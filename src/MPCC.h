@@ -42,15 +42,8 @@
     #else
       #define DOUBLE 1
       #include <R.h>
-      #ifdef NOMKL // Compiling for R not using MKL so use BLAS.h
+      #ifdef NOMKL // Compiling for R not using the Intel MKL so use BLAS.h
         #include <R_ext/BLAS.h>
-        #define FREE free
-        #define ALLOCATOR(x, y, z) { \
-          calloc(x,y);}
-      #else
-        #define FREE mkl_free
-        #define ALLOCATOR(x, y, z) { \
-          mkl_calloc(x,y,z);}
       #endif
       #include <Rmath.h>
       #include <string>
@@ -81,6 +74,17 @@
     #define AXPY cblas_saxpy
   #endif
 
+// Defines for the MKL/ non-MKL allocators
+#ifdef NOMKL
+  #define FREE free
+  #define ALLOCATOR(x, y, z) { \
+    calloc(x,y);}
+#else
+  #define FREE mkl_free
+  #define ALLOCATOR(x, y, z) { \
+    mkl_calloc(x,y,z);}
+#endif
+  
 #ifdef __MINGW32__
     #define NANF nan("1")
 #else
