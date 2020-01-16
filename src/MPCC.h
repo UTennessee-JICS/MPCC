@@ -58,20 +58,34 @@
 
   #if DOUBLE
     #define DataType double
-    #define VSQR vdSqr
-    #define VMUL vdMul
-    #define VSQRT vdSqrt
-    #define VDIV vdDiv
     #define GEMM cblas_dgemm
     #define AXPY cblas_daxpy
+    #ifdef NOMKL // Use our MKL substitution functions
+      #define VSQR vSqr
+      #define VMUL vMul
+      #define VSQRT vSqrt
+      #define VDIV vDiv
+    #else // Use MKL functions
+      #define VSQR vdSqr
+      #define VMUL vdMul
+      #define VSQRT vdSqrt
+      #define VDIV vdDiv
+    #endif
   #else
     #define DataType float
-    #define VSQR vsSqr
-    #define VMUL vsMul
-    #define VSQRT vsSqrt
-    #define VDIV  vsDiv
     #define GEMM cblas_sgemm
     #define AXPY cblas_saxpy
+    #ifdef NOMKL // Use our MKL substitution functions
+      #define VSQR vSqr
+      #define VMUL vMul
+      #define VSQRT vSqrt
+      #define VDIV vDiv    
+    #else // Use MKL functions
+      #define VSQR vsSqr
+      #define VMUL vsMul
+      #define VSQRT vsSqrt
+      #define VDIV  vsDiv
+    #endif
   #endif
 
 // Defines for the MKL/ non-MKL allocators
@@ -81,7 +95,6 @@
 #else
   #define FREE mkl_free
   #define ALLOCATOR(x,y,z) mkl_calloc(x,y,z)
-
 #endif
   
 #ifdef __MINGW32__
