@@ -28,20 +28,24 @@ using namespace std;
 
 #ifdef NOMKL // Define our MKL substitute functions
   DataType vSqr (int l, DataType* in, DataType* out) {
+    int i;
     #pragma omp parallel for private(i)
-    for(int i = 0; i < l; i++) { out[i] = in[i] * in[i]; }
+    for(i = 0; i < l; i++) { out[i] = in[i] * in[i]; }
   }
   DataType vMul (int l, DataType* in1, DataType* in2, DataType* out) {
+    int i;
     #pragma omp parallel for private(i)
-    for(int i = 0; i < l; i++) { out[i] = in1[i] * in2[i]; }
+    for(i = 0; i < l; i++) { out[i] = in1[i] * in2[i]; }
   }
   DataType vSqrt (int l, DataType* in, DataType* out) {
+    int i;
     #pragma omp parallel for private(i)
-    for(int i = 0; i < l; i++) { out[i] = sqrt(in[i]); }
+    for(i = 0; i < l; i++) { out[i] = sqrt(in[i]); }
   }
   DataType vDiv (int l, DataType* in1, DataType* in2, DataType* out) {
+    int i;
     #pragma omp parallel for private(i)
-    for(int i = 0; i < l; i++) { out[i] = in1[i] / in2[i]; }
+    for(i = 0; i < l; i++) { out[i] = in1[i] / in2[i]; }
   }
 #endif
 
