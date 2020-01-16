@@ -77,12 +77,11 @@
 // Defines for the MKL/ non-MKL allocators
 #ifdef NOMKL
   #define FREE free
-  #define ALLOCATOR(x, y, z) { \
-    return(calloc(x,y));}
+  #define ALLOCATOR calloc
 #else
   #define FREE mkl_free
-  #define ALLOCATOR(x, y, z) { \
-    return(mkl_calloc(x,y,z));}
+  #define ALLOCATOR mkl_calloc
+
 #endif
   
 #ifdef __MINGW32__
