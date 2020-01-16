@@ -80,7 +80,7 @@ void initialize(int &m, int &n, int &p, int seed,
   *A = (DataType *)mkl_calloc( m*n,sizeof( DataType ), 64 ); 
   if (*A == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix A. Aborting... \n\n");
-    mkl_free(*A);
+    FREE(*A);
     exit (0);
   }
 
@@ -116,7 +116,7 @@ void initialize(int &m, int &n, int &p, int seed,
   *B = (DataType *)mkl_calloc( n*p,sizeof( DataType ), 64 );
   if (*B == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix B. Aborting... \n\n");
-    mkl_free(*B);
+    FREE(*B);
     exit (0);
   }
 
@@ -125,7 +125,7 @@ void initialize(int &m, int &n, int &p, int seed,
   *C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 ); 
   if (*C == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix C. Aborting... \n\n");
-    mkl_free(*C);
+    FREE(*C);
     exit (0);
   }
   
@@ -281,19 +281,19 @@ int pcc_matrix(int m, int n, int p,
   if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
     printf( "\n ERROR: Can't allocate memory for intermediate matrices. Aborting... \n\n");
-    mkl_free(N);
-    mkl_free(M);
-    mkl_free(SA);
-    mkl_free(AA);
-    mkl_free(SAA);
-    mkl_free(SB);
-    mkl_free(BB);
-    mkl_free(SBB);
-    mkl_free(SAB);
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-    mkl_free(amask);
-    mkl_free(bmask);
+    FREE(N);
+    FREE(M);
+    FREE(SA);
+    FREE(AA);
+    FREE(SAA);
+    FREE(SB);
+    FREE(BB);
+    FREE(SBB);
+    FREE(SAB);
+    FREE(UnitA);
+    FREE(UnitB);
+    FREE(amask);
+    FREE(bmask);
     #ifndef USING_R
     exit (0);
     #else
@@ -395,10 +395,10 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-    mkl_free(AA);
-    mkl_free(BB);
+    FREE(UnitA);
+    FREE(UnitB);
+    FREE(AA);
+    FREE(BB);
 
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
@@ -455,22 +455,22 @@ int pcc_matrix(int m, int n, int p,
     //P=NSAB/DENOMSqrt (element wise division)
     VDIV(m*p,NSAB,DENOMSqrt,P);   
 
-    mkl_free(SASB);
-    mkl_free(NSAB);
-    mkl_free(SASA);
-    mkl_free(NSAA);
-    mkl_free(SBSB);
-    mkl_free(NSBB);
-    mkl_free(DENOM);
-    mkl_free(DENOMSqrt); 
+    FREE(SASB);
+    FREE(NSAB);
+    FREE(SASA);
+    FREE(NSAA);
+    FREE(SBSB);
+    FREE(NSBB);
+    FREE(DENOM);
+    FREE(DENOMSqrt); 
   }
 
-  mkl_free(N);
-  mkl_free(SA);
-  mkl_free(SAA);
-  mkl_free(SB);
-  mkl_free(SBB);
-  mkl_free(SAB);
+  FREE(N);
+  FREE(SA);
+  FREE(SAA);
+  FREE(SB);
+  FREE(SBB);
+  FREE(SAB);
 
   return 0;
 };
@@ -684,8 +684,8 @@ int pcc_vector(int m, int n, int p,
     }
 
     clock_gettime(CLOCK_MONOTONIC, &startGEMM);
-    mkl_free(UnitA);
-    mkl_free(UnitB);
+    FREE(UnitA);
+    FREE(UnitB);
 
     clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
     accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
@@ -738,22 +738,22 @@ int pcc_vector(int m, int n, int p,
     //P=SAB/DENOMSqrt (element wise division)
     VDIV(m*p,SAB,DENOMSqrt,P);   
 
-    mkl_free(SASA);
-    mkl_free(SASB);
-    mkl_free(SBSB);
-    mkl_free(NSAB);
-    mkl_free(NSAA);
-    mkl_free(NSBB);
-    mkl_free(DENOM);
-    mkl_free(DENOMSqrt); 
+    FREE(SASA);
+    FREE(SASB);
+    FREE(SBSB);
+    FREE(NSAB);
+    FREE(NSAA);
+    FREE(NSBB);
+    FREE(DENOM);
+    FREE(DENOMSqrt); 
   }
 
-  mkl_free(N);
-  mkl_free(SA);
-  mkl_free(SAA);
-  mkl_free(SB);
-  mkl_free(SBB);
-  mkl_free(SAB);
+  FREE(N);
+  FREE(SA);
+  FREE(SAA);
+  FREE(SB);
+  FREE(SBB);
+  FREE(SAB);
 
   return 0;
 };
