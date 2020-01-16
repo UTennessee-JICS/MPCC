@@ -43,7 +43,7 @@
       #define DOUBLE 1
       #include <R.h>
       #ifdef NOMKL // Compiling for R not using the Intel MKL so use BLAS.h
-        #include "cblas.h"
+        #include <Rinternals.h>
       #endif
       #include <Rmath.h>
       #include <string>
@@ -63,8 +63,8 @@
       #define VMUL vMul
       #define VSQRT vSqrt
       #define VDIV vDiv
-      #define GEMM dgemm_
-      #define AXPY daxpy_
+      #define GEMM F77_CALL(dgemm)
+      #define AXPY F77_CALL(daxpy)
     #else // Use MKL functions
       #define VSQR vdSqr
       #define VMUL vdMul
@@ -75,18 +75,20 @@
     #endif
   #else
     #define DataType float
-    #define GEMM cblas_sgemm
-    #define AXPY cblas_saxpy
     #ifdef NOMKL // Use our MKL substitution functions
       #define VSQR vSqr
       #define VMUL vMul
       #define VSQRT vSqrt
       #define VDIV vDiv    
+      #define GEMM cblas_sgemm
+      #define AXPY cblas_saxpy
     #else // Use MKL functions
       #define VSQR vsSqr
       #define VMUL vsMul
       #define VSQRT vsSqrt
       #define VDIV  vsDiv
+      #define GEMM cblas_sgemm
+      #define AXPY cblas_saxpy
     #endif
   #endif
 
