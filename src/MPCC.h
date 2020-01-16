@@ -77,10 +77,10 @@
 // Defines for the MKL/ non-MKL allocators
 #ifdef NOMKL
   #define FREE free
-  #define ALLOCATOR calloc
+  #define ALLOCATOR(x,y,z) calloc(x,y)
 #else
   #define FREE mkl_free
-  #define ALLOCATOR mkl_calloc
+  #define ALLOCATOR(x,y,z) mkl_calloc(x,y,z)
 
 #endif
   
