@@ -78,11 +78,11 @@
 #ifdef NOMKL
   #define FREE free
   #define ALLOCATOR(x, y, z) { \
-    calloc(x,y);}
+    return(calloc(x,y));}
 #else
   #define FREE mkl_free
   #define ALLOCATOR(x, y, z) { \
-    mkl_calloc(x,y,z);}
+    return(mkl_calloc(x,y,z));}
 #endif
   
 #ifdef __MINGW32__
