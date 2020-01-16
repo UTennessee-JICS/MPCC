@@ -26,6 +26,25 @@ using namespace std;
   #define DOUBLE 0
 #endif
 
+#ifdef NOMKL // Define our MKL substitute functions
+  DataType vSqr (l, DataType* in, DataType* out) {
+    #pragma omp parallel for private(i)
+    for(int i = 0; i < l; i++) { out[i] = in[i] * in[i]; }
+  }
+  DataType vMul (l, DataType* in1, DataType* in2, DataType* out) {
+    #pragma omp parallel for private(i)
+    for(int i = 0; i < l; i++) { out[i] = in1[i] * in2[i]; }
+  }
+  DataType vSqrt (l, DataType* in, DataType* out) {
+    #pragma omp parallel for private(i)
+    for(int i = 0; i < l; i++) { out[i] = sqrt(in[i]); }
+  }
+  DataType vDiv (l, DataType* in1, DataType* in2, DataType* out) {
+    #pragma omp parallel for private(i)
+    for(int i = 0; i < l; i++) { out[i] = in1[i] / in2[i]; }
+  }
+#endif
+
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
 }
