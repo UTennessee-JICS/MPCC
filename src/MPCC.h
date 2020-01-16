@@ -81,8 +81,9 @@
       #define VMUL vMul
       #define VSQRT vSqrt
       #define VDIV vDiv    
-      #define GEMM cblas_sgemm
-      #define AXPY cblas_saxpy
+      // R does not provide float versions of GEMM and AXPY
+      //#define GEMM cblas_sgemm
+      //#define AXPY cblas_saxpy
     #else // Use MKL functions
       #define VSQR vsSqr
       #define VMUL vsMul
