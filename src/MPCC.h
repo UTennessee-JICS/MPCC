@@ -42,6 +42,9 @@
     #else
       #define DOUBLE 1
       #include <R.h>
+      #ifdef NOMKL // Compiling for R not using MKL so use BLAS.h
+        #include <R_ext/BLAS.h>
+      #endif
       #include <Rmath.h>
       #include <string>
 
