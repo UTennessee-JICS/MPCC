@@ -77,7 +77,7 @@ void initialize(int &m, int &n, int &p, int seed,
   }
   //else use default value for m,n
 
-  *A = (DataType *)mkl_calloc( m*n,sizeof( DataType ), 64 ); 
+  *A = (DataType *)ALLOCATOR( m*n,sizeof( DataType ), 64 ); 
   if (*A == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix A. Aborting... \n\n");
     FREE(*A);
@@ -113,7 +113,7 @@ void initialize(int &m, int &n, int &p, int seed,
   assert(n==_n);
 
   //else use default value for n,p
-  *B = (DataType *)mkl_calloc( n*p,sizeof( DataType ), 64 );
+  *B = (DataType *)ALLOCATOR( n*p,sizeof( DataType ), 64 );
   if (*B == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix B. Aborting... \n\n");
     FREE(*B);
@@ -122,7 +122,7 @@ void initialize(int &m, int &n, int &p, int seed,
 
   printf("m=%d n=%d p=%d\n",m,n,p);
 
-  *C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 ); 
+  *C = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 ); 
   if (*C == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix C. Aborting... \n\n");
     FREE(*C);
@@ -248,31 +248,31 @@ int pcc_matrix(int m, int n, int p,
   bool transposeB = true; //assume this is always true. 
   //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
-  DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
+  DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
-  DataType *M = (DataType *) mkl_calloc( m*p, sizeof( DataType ), 64 );
+  DataType *M = (DataType *) ALLOCATOR( m*p, sizeof( DataType ), 64 );
   __assume_aligned(M, 64);
-  DataType* SA =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
+  DataType* SA =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SA, 64);
-  DataType* AA =    ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 ); 
+  DataType* AA =    ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 ); 
   __assume_aligned(AA, 64);
-  DataType* SAA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAA, 64);
-  DataType* SB =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
+  DataType* SB =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SB, 64);
-  DataType* BB =    ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 ); 
+  DataType* BB =    ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 ); 
   __assume_aligned(BB, 64);
-  DataType* SBB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
+  DataType* SBB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SBB, 64);
-  DataType* SAB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAB, 64);
-  DataType* UnitA = ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 );
+  DataType* UnitA = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );
   __assume_aligned(UnitA, 64);
-  DataType* UnitB = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
+  DataType* UnitB = ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
   __assume_aligned(UnitB, 64);  
-  DataType *amask=(DataType*)mkl_calloc( m*n, sizeof(DataType), 64);
+  DataType *amask=(DataType*)ALLOCATOR( m*n, sizeof(DataType), 64);
   __assume_aligned(amask, 64);
-  DataType *bmask=(DataType*)mkl_calloc( n*p, sizeof(DataType), 64);
+  DataType *bmask=(DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
 
   //info("after calloc\n",1);
@@ -409,17 +409,17 @@ int pcc_matrix(int m, int n, int p,
     //accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
     //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
 
-    DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* NSAB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
    
-    DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
+    DataType* NSAA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
     
-    DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
+    DataType* SBSB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );    
+    DataType* NSBB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb   
     
-    DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
+    DataType* DENOM = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* DENOMSqrt =( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
 
     //Compute and assemble composite terms
 
@@ -532,14 +532,14 @@ int pcc_vector(int m, int n, int p,
   // If false, then set Amask or Bmask respectively to ones at that location (masks initialized to zeros)
   // (there may be a more efficent way to do this)
   
-  DataType* Amask = ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 );
+  DataType* Amask = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );
   __assume_aligned(Amask, 64);
   for(i=0; i<m*n; ++i){
      if(isnan(A[i])){ A[i]=0;}
      else{Amask[i]=ones;}
   }
 
-  DataType* Bmask = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
+  DataType* Bmask = ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
   __assume_aligned(Bmask, 64);    
   for(i=0; i<p*n; ++i){
      if(isnan(B[i])){ B[i]=0;}
@@ -558,7 +558,7 @@ int pcc_vector(int m, int n, int p,
   //(There may be a faster way to sum values for N using bit ops)
 
   //N contains the number of elements used in each row column PCC calculation (after missing values are removed)
-  DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
+  DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
   for(i=0; i<m; ++i){
      for(j=0; j<p; ++j){
@@ -584,7 +584,7 @@ int pcc_vector(int m, int n, int p,
   //  eliminating the lower triangular redundancy.
   
 
-  DataType* SAB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAB, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(i=0; i<m; ++i){
@@ -598,7 +598,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SA, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(i=0; i<m; ++i){
@@ -614,7 +614,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SB, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(j=0; j<p; ++j){
@@ -630,7 +630,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SAA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAA, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(i=0; i<m; ++i){
@@ -647,7 +647,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SBB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SBB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SBB, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(j=0; j<p; ++j){
@@ -691,17 +691,17 @@ int pcc_vector(int m, int n, int p,
     accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
     //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
 
-    DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* NSAB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
    
-    DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
+    DataType* NSAA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
     
-    DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
+    DataType* SBSB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );    
+    DataType* NSBB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb   
     
-    DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
+    DataType* DENOM = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* DENOMSqrt =( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
 
     //Compute and assemble composite terms
 
@@ -794,7 +794,7 @@ int main (int argc, char **argv) {
    
   bool transposeB=false;
   initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
-  //C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+  //C = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
   clock_gettime(CLOCK_MONOTONIC, &startPCC);
 #if NAIVE
   printf("naive PCC implmentation\n");
@@ -824,7 +824,7 @@ int main (int argc, char **argv) {
      test_file >> tmp;
      dim2 = tmp;
      printf("dim1=%d dim2=%d dim1*dim2=%d\n",dim1,dim2,dim1*dim2);
-     C = (DataType *)mkl_calloc( dim1*dim2,sizeof( DataType ), 64 );
+     C = (DataType *)ALLOCATOR( dim1*dim2,sizeof( DataType ), 64 );
      for(int i=0;i<dim1*dim2;++i) test_file >> C[i];
      test_file.close();
   }
@@ -850,7 +850,7 @@ int main (int argc, char **argv) {
   C_2norm=sqrt(C_2norm);
   for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
   R_2norm=sqrt(R_2norm);
-  diff = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+  diff = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
   for (int i=0; i<m*p; i++) { 
      diff[i]=pow(C[i]-R[i],2);
      diff_2norm += diff[i]; 
