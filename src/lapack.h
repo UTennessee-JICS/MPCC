@@ -1,6 +1,8 @@
 #ifndef __MPCC_LAPACK_H__
   #define __MPCC_LAPACK_H__
-  
+
+   #include <stddef.h> 
+
   enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102};
   enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
 
@@ -10,6 +12,6 @@
               const double *beta, double *restrict c, const int *ldc);
               
   void daxpy_(const int N, const double alpha, const double *X,
-                   const int incX, double *Y, const int incY);
+              const int incX, double *Y, const int incY);
 
 #endif
