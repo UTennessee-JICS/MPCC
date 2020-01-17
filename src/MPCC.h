@@ -105,10 +105,10 @@
 #ifdef __MINGW32__
     #define NANF nan("1")
 #else
-    #if __STDC_VERSION__ == 199901L
-      #define NANF nan("1")
-    #else
+    #if __STDC_VERSION__ == 201112L
       #define NANF std::nan("1")
+    #else
+      #define NANF nan("1")
     #endif
 #endif
     
