@@ -94,7 +94,7 @@
     #endif
   #endif
 
-// Defines for the MKL/ non-MKL allocators
+// Defines for the NOMKL / MKL allocators
 #ifdef NOMKL
   #define FREE free
   #define ALLOCATOR(x,y,z) calloc(x,y)
