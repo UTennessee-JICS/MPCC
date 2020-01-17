@@ -12,7 +12,7 @@
       #include <mkl.h>
     #else
       #define NOMKL 1
-      #include <cmath>
+      #include <math.h>
     #endif
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
@@ -105,7 +105,11 @@
 #ifdef __MINGW32__
     #define NANF nan("1")
 #else
-    #define NANF std::nan("1")
+    #if __STDC_VERSION__ == 199901L
+      #define NANF nan("1")
+    #else
+      #define NANF std::nan("1")
+    #endif
 #endif
     
 #define MISSING_MARKER NANF
