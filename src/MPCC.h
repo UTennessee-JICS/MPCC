@@ -106,13 +106,7 @@
 #ifdef __MINGW32__
     #define NANF nan("1")
 #else
-    #if __STDC_VERSION__ == 201112L
-      // NAN defined in std namespace
-      #define NANF std::nan("1")
-    #else
-      // NAN is defined in the global namespace
-      #define NANF nan("1")
-    #endif
+    #define NANF std::nan("1")
 #endif
 
 #define MISSING_MARKER NANF
