@@ -63,8 +63,8 @@
       #define VMUL vMul
       #define VSQRT vSqrt
       #define VDIV vDiv
-      #define GEMM dgemm_
-      #define AXPY daxpy_
+      #define GEMM dgemm_wrap
+      #define AXPY daxpy_wrap
     #else // Use MKL functions
       #define VSQR vdSqr
       #define VMUL vdMul
