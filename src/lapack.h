@@ -7,9 +7,9 @@
   enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
 
   void dgemm_(const char *transa, const char *transb, const int *m, const int *n,
-              const int *k, const double *restrict alpha, const double *restrict a,
-              const int *lda, const double *restrict b, const int *ldb,
-              const double *beta, double *restrict c, const int *ldc);
+              const int *k, const double *__restrict alpha, const double *__restrict a,
+              const int *lda, const double *__restrict b, const int *ldb,
+              const double *beta, double *__restrict c, const int *ldc);
   void daxpy_(const int *n, const double *da, const double *dx, const int *incx,
               double *dy, const int *incy);
 #endif
