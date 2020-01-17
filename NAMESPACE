@@ -1,4 +1,4 @@
-useDynLib(MPCC)
+useDynLib(MPCC, .registration=TRUE)
 
 exportPattern("^[^\\.]")
 
