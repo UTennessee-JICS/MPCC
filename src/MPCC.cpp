@@ -26,28 +26,33 @@ using namespace std;
   #define DOUBLE 0
 #endif
 
-#ifdef NOMKL // Define our MKL substitute functions
-  DataType vSqr (int l, DataType* in, DataType* out) {
+#ifdef NOMKL
+  // MKL substitute functions vSqr
+  void vSqr (int l, DataType* in, DataType* out) {
     int i;
     #pragma omp parallel for private(i)
     for(i = 0; i < l; i++) { out[i] = in[i] * in[i]; }
   }
-  DataType vMul (int l, DataType* in1, DataType* in2, DataType* out) {
+  // MKL substitute functions vMul
+  void vMul (int l, DataType* in1, DataType* in2, DataType* out) {
     int i;
     #pragma omp parallel for private(i)
     for(i = 0; i < l; i++) { out[i] = in1[i] * in2[i]; }
   }
-  DataType vSqrt (int l, DataType* in, DataType* out) {
+  // MKL substitute functions vSqrt
+  void vSqrt (int l, DataType* in, DataType* out) {
     int i;
     #pragma omp parallel for private(i)
     for(i = 0; i < l; i++) { out[i] = sqrt(in[i]); }
   }
-  DataType vDiv (int l, DataType* in1, DataType* in2, DataType* out) {
+  // MKL substitute functions vDiv
+  void vDiv (int l, DataType* in1, DataType* in2, DataType* out) {
     int i;
     #pragma omp parallel for private(i)
     for(i = 0; i < l; i++) { out[i] = in1[i] / in2[i]; }
   }
-  
+  // dgemm_wrap function for R_ext/Lapack.h dgemm
+  // Call dgemm_ function pointer using fortran name mangling
   void dgemm_wrap(const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA,
                   const enum CBLAS_TRANSPOSE TransB, const int M, const int N,
                   const int K, const double alpha, const double *A,
@@ -55,6 +60,8 @@ using namespace std;
                   const double beta, double *C, const int ldc){
     F77_CALL(dgemm)("T", "N", &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
   }
+  // daxpy_wrap function for R_ext/Lapack.h daxpy
+  // Call daxpy_ function pointer using fortran name mangling
   void daxpy_wrap(const int N, const double alpha, const double *X,
                   const int incX, double *Y, const int incY){
     F77_CALL(daxpy)(&N, &alpha, X, &incX, Y, &incY);
