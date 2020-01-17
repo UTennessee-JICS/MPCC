@@ -342,10 +342,8 @@ int pcc_matrix(int m, int n, int p,
   } 
 
   //info("before deal missing data\n",1);
-
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
-
     //if element in A is missing, set amask and A to 0
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
@@ -376,7 +374,6 @@ int pcc_matrix(int m, int n, int p,
 
     GEMM(CblasRowMajor, CblasNoTrans, CblasTrans,
          m, p, n, alpha, amask, n, bmask, n, beta, N, p);
-
 
     //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
