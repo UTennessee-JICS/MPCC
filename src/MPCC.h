@@ -42,9 +42,8 @@
     #else
       #define DOUBLE 1
       #include <R.h>
-      #ifdef NOMKL // Compiling for R not using the Intel MKL so use BLAS.h
-        #include <Rinternals.h>
-        #include <R_ext/Lapack.h>
+      #ifdef NOMKL // Compiling for R not using the Intel MKL so use our lapack.h
+        #include "lapack.h"
       #endif
       #include <Rmath.h>
       #include <string>
@@ -64,8 +63,8 @@
       #define VMUL vMul
       #define VSQRT vSqrt
       #define VDIV vDiv
-      #define GEMM F77_CALL(dgemm)
-      #define AXPY F77_CALL(daxpy)
+      #define GEMM dgemm_
+      #define AXPY daxpy_
     #else // Use MKL functions
       #define VSQR vdSqr
       #define VMUL vdMul
