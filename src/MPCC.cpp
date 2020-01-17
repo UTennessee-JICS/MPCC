@@ -53,11 +53,11 @@ using namespace std;
                   const int K, const double alpha, const double *A,
                   const int lda, const double *B, const int ldb,
                   const double beta, double *C, const int ldc){
-    dgemm_("N", "T", &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+    F77_CALL(dgemm)("N", "T", &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
   }
   void daxpy_wrap(const int N, const double alpha, const double *X,
                   const int incX, double *Y, const int incY){
-    daxpy_(&N, &alpha, X, &incX, Y, &incY);
+    F77_CALL(daxpy)(&N, &alpha, X, &incX, Y, &incY);
   }
 #endif
 

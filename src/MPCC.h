@@ -44,6 +44,7 @@
       #include <R.h>
       #ifdef NOMKL // Compiling for R not using the Intel MKL so use our lapack.h
         #include "lapack.h"
+        #include <R_ext/Lapack.h>
       #endif
       #include <Rmath.h>
       #include <string>
