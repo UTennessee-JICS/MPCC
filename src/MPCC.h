@@ -12,7 +12,7 @@
       #include <mkl.h>
     #else
       #define NOMKL 1
-      #include <math.h>
+      #include <cmath>
     #endif
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
