@@ -1,5 +1,3 @@
-useDynLib(MPCC, .registration=TRUE)
-
 exportPattern("^[^\\.]")
 
 importFrom("grDevices", "dev.off", "png")
@@ -7,3 +5,4 @@ importFrom("graphics", "legend", "plot", "points", "polygon")
 importFrom("stats", "cor", "median", "rnorm", "runif", "sd")
 importFrom("utils", "write.table")
 
+useDynLib(MPCC, coop)
