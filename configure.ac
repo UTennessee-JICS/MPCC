@@ -11,7 +11,7 @@ if test [ -n "$MKL_HOME" ] ; then
    LIBS="-L$MKL_HOME -Wl,--start-group $MKL_HOME/lib/intel64/libmkl_intel_ilp64.a $MKL_HOME/lib/intel64/libmkl_intel_thread.a $MKL_HOME/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl ${LIBS}"
 else
    echo "Could not determine MKL_HOME"
-   MPCC_CPPFLAGS="-DNOMKL"
+   MPCC_CPPFLAGS="-DNOMKL -std=gnu99"
 fi
 
 dnl Now find the compiler and compiler flags to use
