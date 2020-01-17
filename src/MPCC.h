@@ -16,14 +16,11 @@
     #endif
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
-
       // #error "Completely standalone (TODO: export as R-bound DYNLIB)"
- 
       #include <stdio.h>
       #include <stdlib.h>
       #include <stdint.h>
       #include <cfloat>
-
       #include <cmath>
       #include <iostream>
       #include <fstream>
@@ -36,9 +33,7 @@
       #define err(format, ...) { \
         printf(format, __VA_ARGS__); \
         exit(-1); }
-        
       #define CHECKNA std::isnan
-        
     #else
       #define DOUBLE 1
       #include <R.h>
@@ -53,7 +48,6 @@
         Rprintf(format, __VA_ARGS__);}
       #define err(format, ...) { \
         error(format, __VA_ARGS__);}
-      
       #define CHECKNA std::isnan
     #endif
 
