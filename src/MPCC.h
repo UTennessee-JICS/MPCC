@@ -8,7 +8,7 @@
 
     #define BILLION  1000000000L
 
-    #ifdef MKL // Disable the mkl as needed
+    #ifdef MKL // MKL build is requested, import MKL
       #include <mkl.h>
     #else
       #define NOMKL 1
@@ -59,7 +59,7 @@
 
   #if DOUBLE
     #define DataType double
-    #ifdef NOMKL // Use our MKL substitution functions
+    #ifdef NOMKL // Use our MKL substitution functions and wrapper
       #define VSQR vSqr
       #define VMUL vMul
       #define VSQRT vSqrt
@@ -80,10 +80,10 @@
       #define VSQR vSqr
       #define VMUL vMul
       #define VSQRT vSqrt
-      #define VDIV vDiv    
-      // R does not provide float versions of GEMM and AXPY
-      //#define GEMM cblas_sgemm
-      //#define AXPY cblas_saxpy
+      #define VDIV vDiv
+      #define GEMM cblas_sgemm
+      #define AXPY cblas_saxpy
+    // #error "R does not provide float versions of GEMM and AXPY"
     #else // Use MKL functions
       #define VSQR vsSqr
       #define VMUL vsMul
@@ -107,12 +107,14 @@
     #define NANF nan("1")
 #else
     #if __STDC_VERSION__ == 201112L
+      // NAN defined in std namespace
       #define NANF std::nan("1")
     #else
+      // NAN is defined in the global namespace
       #define NANF nan("1")
     #endif
 #endif
-    
+
 #define MISSING_MARKER NANF
 
     // Forward declaration of the functions
@@ -121,4 +123,3 @@
     int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
 #endif //__MPCC_H__
-
