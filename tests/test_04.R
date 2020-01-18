@@ -1,6 +1,7 @@
 # copyright (c) - HU-Berlin / UTHSC / JICS by Danny Arends
 
 library(MPCC)
+MPCCinfo()
 
 set.seed(1)
 

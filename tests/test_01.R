@@ -2,6 +2,7 @@
 
 # Compare MPCC versus cor() function, mA = 5 x 5, mB = 5 x 5, no missing data
 library(MPCC)
+MPCCinfo()
 
 set.seed(1)
 x <- 5

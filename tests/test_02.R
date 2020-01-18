@@ -2,6 +2,7 @@
 
 # Compare MPCC versus cor() function, mA = 15 x 5, mB = 15 x 10, no missing data
 library(MPCC)
+MPCCinfo()
 
 set.seed(1)
 mAB <- genAB(p = 200, n = 2000, m = 200)
