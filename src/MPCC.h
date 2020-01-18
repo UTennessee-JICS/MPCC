@@ -47,7 +47,7 @@
       #define info(format, ...) { \
         Rprintf(format, __VA_ARGS__);}
       #define err(format, ...) { \
-        error(format, __VA_ARGS__);}
+        REprintf(format, __VA_ARGS__);}
       #define CHECKNA std::isnan
     #endif
 
