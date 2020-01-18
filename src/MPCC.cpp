@@ -272,6 +272,8 @@ void initialize(int &m, int &n, int &p, int seed,
 
 #endif
 
+#ifndef NOBLAS
+
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
@@ -511,6 +513,8 @@ int pcc_matrix(int m, int n, int p,
 
   return 0;
 };
+
+#endif
 
 #ifndef NOMKL
 #ifdef PCC_VECTOR
