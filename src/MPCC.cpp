@@ -15,7 +15,11 @@
 using namespace std;
 
 #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
-#define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
+#ifndef USING_R
+  #define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
+#else
+  #define __assume_aligned(var,size){  }
+#endif
 #define DEV_CHECKPT printf("Checkpoint: %s, line %d\n", __FILE__, __LINE__); fflush(stdout); 
 
 #ifndef NAIVE //default use matrix version
@@ -68,6 +72,8 @@ using namespace std;
   }
 #endif
 
+#ifndef USING_R
+
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
 }
@@ -84,8 +90,6 @@ DataType convert_to_val(string text)
     else{ val = atof(text.c_str());}
     return val;
 }
-
-#ifndef USING_R
 
 // This function initialized the matrices for m, n, p sized A and the B and result (C) matrices
 // Not part of the R interface since R initializes the memory
@@ -282,11 +286,11 @@ void initialize(int &m, int &n, int &p, int seed,
 int pcc_matrix(int m, int n, int p,
                DataType* A, DataType* B, DataType* P)
 {
+  // Unused variable warning: int stride = ((n-1)/64 +1);
   int i,j,k;
-  int stride = ((n-1)/64 +1);
-  DataType alpha=1.0;
-  DataType beta=0.0;
-  int count =1;
+  DataType alpha = 1.0;
+  DataType beta = 0.0;
+  int count = 1;
   bool transposeB = true; //assume this is always true. 
   //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
