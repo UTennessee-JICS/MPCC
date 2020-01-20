@@ -3,6 +3,7 @@
 \alias{genAB}
 \alias{runPNM}
 \alias{runAB}
+\alias{MPCCinfo}
 \alias{testImprovement}
 \alias{testRunPNM}
 
