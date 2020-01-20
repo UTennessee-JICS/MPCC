@@ -86,21 +86,21 @@
     #endif
   #endif
 
-// Defines for the NOMKL / MKL allocators
-#ifdef NOMKL
-  #define FREE free
-  #define ALLOCATOR(n, type, align) calloc(n, type)
-#else
-  #define FREE mkl_free
-  #define ALLOCATOR(n, type, align) mkl_calloc(n, type, align)
-#endif
-  
-#define CHECKNA std::isnan
-#define MISSING_MARKER std::nan("1")
+  // Defines for the NOMKL / MKL allocators
+  #ifdef NOMKL
+    #define FREE free
+    #define ALLOCATOR(n, type, align) calloc(n, type)
+  #else
+    #define FREE mkl_free
+    #define ALLOCATOR(n, type, align) mkl_calloc(n, type, align)
+  #endif
+    
+  #define CHECKNA std::isnan
+  #define MISSING_MARKER std::nan("1")
 
-    // Forward declaration of the functions
-    int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
-    int pcc_vector(int m, int n, int p, DataType* A, DataType* B, DataType* P);
-    int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+  // Forward declaration of the functions
+  int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+  int pcc_vector(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+  int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
 #endif //__MPCC_H__
