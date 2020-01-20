@@ -91,10 +91,10 @@
 // Defines for the NOMKL / MKL allocators
 #ifdef NOMKL
   #define FREE free
-  #define ALLOCATOR(x,y,z) calloc(x,y)
+  #define ALLOCATOR(n, type, align) calloc(n, type)
 #else
   #define FREE mkl_free
-  #define ALLOCATOR(x,y,z) mkl_calloc(x,y,z)
+  #define ALLOCATOR(n, type, align) mkl_calloc(n, type, align)
 #endif
   
 #ifdef __MINGW32__

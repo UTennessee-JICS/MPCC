@@ -326,7 +326,7 @@ int pcc_matrix(int m, int n, int p,
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
   if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
-    printf( "\n ERROR: Can't allocate memory for intermediate matrices. Aborting... \n\n");
+    err("ERROR: Can't allocate memory for intermediate matrices. Aborting...\n", 1);
     FREE(N);
     FREE(M);
     FREE(SA);
@@ -341,9 +341,9 @@ int pcc_matrix(int m, int n, int p,
     FREE(amask);
     FREE(bmask);
     #ifndef USING_R
-    exit (0);
+      exit(0);
     #else
-    return(0);
+      return(0);
     #endif
   } 
 
