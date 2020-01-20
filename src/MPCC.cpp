@@ -327,7 +327,7 @@ int pcc_matrix(int m, int n, int p,
   if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
     err("ERROR: Can't allocate memory for intermediate matrices. Aborting...\n", 1);
-    FREE(N);
+ /*   FREE(N);
     FREE(M);
     FREE(SA);
     FREE(AA);
@@ -339,7 +339,7 @@ int pcc_matrix(int m, int n, int p,
     FREE(UnitA);
     FREE(UnitB);
     FREE(amask);
-    FREE(bmask);
+    FREE(bmask); */
     #ifndef USING_R
       exit(0);
     #else
@@ -438,10 +438,10 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
-    FREE(UnitA);
+   /* FREE(UnitA);
     FREE(UnitB);
     FREE(AA);
-    FREE(BB);
+    FREE(BB); */
 
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
@@ -498,22 +498,22 @@ int pcc_matrix(int m, int n, int p,
     //P=NSAB/DENOMSqrt (element wise division)
     VDIV(m*p,NSAB,DENOMSqrt,P);   
 
-    FREE(SASB);
+  /*  FREE(SASB);
     FREE(NSAB);
     FREE(SASA);
     FREE(NSAA);
     FREE(SBSB);
     FREE(NSBB);
     FREE(DENOM);
-    FREE(DENOMSqrt); 
+    FREE(DENOMSqrt); */
   }
 
-  FREE(N);
+/*  FREE(N);
   FREE(SA);
   FREE(SAA);
   FREE(SB);
   FREE(SBB);
-  FREE(SAB);
+  FREE(SAB); */
 
   return 0;
 };
