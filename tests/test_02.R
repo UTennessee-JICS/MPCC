@@ -21,6 +21,6 @@ mpcc <- PCC.naive(mAB[["A"]], mAB[["B"]])
 
 
 if (sum(round(mpcc - ref, 12)) != 0) {
-  stop("Inaccurate results for 5x10 matrix")
+  stop("Inaccurate results for 200x200 matrix")
 }
 
