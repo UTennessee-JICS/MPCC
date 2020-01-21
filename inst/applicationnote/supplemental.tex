@@ -100,7 +100,7 @@ such that there is no missing data in either $A$ or $B$, and $P$ is
 a matrix of PCC calculations. 
 
 \section{Missing Data Bit-masking} \label{MDBM}
-In the summation functions of the Matrix version (lines 1-4), we use use masking matrices to compute 
+In the summation functions of the Matrix version (lines 1-4), we use masking matrices to compute 
 sums efficiently. For example: $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$, where $A_Z$ is the set of 
 vectors $A$ with a zero at every missing data location, and $U_B$ is a matrix of $1's$ with $0's$ 
 at the locations in which matrix $B$ has missing data. By using this masking matrix, we convert a 
@@ -117,7 +117,7 @@ In addition, in the same double nested loops described for the missing data mask
 generate $M$ above, a separate bitmask for each vector in $A$ and for each vector in $B$, 
 is first initialized to all zeros then set to one in every position where there is missing data.
 Then, to find the number of positions where there is no missing data for a given vector $i$ 
-in $A$ and $j$ in $B$ (i.e. a valid correlation), a bitwise OR is done between the the corresponding bitmasks, 
+in $A$ and $j$ in $B$ (i.e. a valid correlation), a bitwise OR is done between the corresponding bitmasks, 
 and a bitsum on the result is subtracted from the size of the vector to determine the number of valid
 pairwise correlations for each vector comparison between $A$ and $B$. 
 
