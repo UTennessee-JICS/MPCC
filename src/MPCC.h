@@ -8,7 +8,7 @@
 
     #define BILLION  1000000000L
 
-    #ifdef MKL // Disable the mkl as needed
+    #ifdef MKL // MKL build is requested, import MKL
       #include <mkl.h>
     #else
       #define NOMKL 1
@@ -16,14 +16,11 @@
     #endif
 
     #ifdef STANDALONE // Completely standalone (TODO: Implement LIB)
-
       // #error "Completely standalone (TODO: export as R-bound DYNLIB)"
- 
       #include <stdio.h>
       #include <stdlib.h>
       #include <stdint.h>
       #include <cfloat>
-
       #include <cmath>
       #include <iostream>
       #include <fstream>
@@ -36,53 +33,74 @@
       #define err(format, ...) { \
         printf(format, __VA_ARGS__); \
         exit(-1); }
-        
-      #define CHECKNA std::isnan
-        
     #else
       #define DOUBLE 1
       #include <R.h>
+      #ifdef NOMKL // Compiling for R not using the Intel MKL so use our lapack.h
+        #include "lapack.h"
+        #include <R_ext/Lapack.h>
+      #endif
       #include <Rmath.h>
       #include <string>
 
       #define info(format, ...) { \
         Rprintf(format, __VA_ARGS__);}
       #define err(format, ...) { \
-        error(format, __VA_ARGS__);}
-      
-      #define CHECKNA std::isnan
+        REprintf(format, __VA_ARGS__);}
     #endif
 
   #if DOUBLE
     #define DataType double
-    #define VSQR vdSqr
-    #define VMUL vdMul
-    #define VSQRT vdSqrt
-    #define VDIV vdDiv
-    #define GEMM cblas_dgemm
-    #define AXPY cblas_daxpy
+    #ifdef NOMKL // Use our MKL substitution functions and wrapper
+      #define VSQR vSqr
+      #define VMUL vMul
+      #define VSQRT vSqrt
+      #define VDIV vDiv
+      #define GEMM dgemm_wrap
+      #define AXPY daxpy_wrap
+    #else // Use MKL functions
+      #define VSQR vdSqr
+      #define VMUL vdMul
+      #define VSQRT vdSqrt
+      #define VDIV vdDiv
+      #define GEMM cblas_dgemm
+      #define AXPY cblas_daxpy
+    #endif
   #else
     #define DataType float
-    #define VSQR vsSqr
-    #define VMUL vsMul
-    #define VSQRT vsSqrt
-    #define VDIV  vsDiv
-    #define GEMM cblas_sgemm
-    #define AXPY cblas_saxpy
+    #ifdef NOMKL // Use our MKL substitution functions
+      #define VSQR vSqr
+      #define VMUL vMul
+      #define VSQRT vSqrt
+      #define VDIV vDiv
+      #define GEMM cblas_sgemm
+      #define AXPY cblas_saxpy
+    // #error "R does not provide float versions of GEMM and AXPY"
+    #else // Use MKL functions
+      #define VSQR vsSqr
+      #define VMUL vsMul
+      #define VSQRT vsSqrt
+      #define VDIV  vsDiv
+      #define GEMM cblas_sgemm
+      #define AXPY cblas_saxpy
+    #endif
   #endif
 
-#ifdef __MINGW32__
-    #define NANF nan("1")
-#else
-    #define NANF std::nan("1")
-#endif
+  // Defines for the NOMKL / MKL allocators
+  #ifdef NOMKL
+    #define FREE free
+    #define ALLOCATOR(n, type, align) calloc(n, type)
+  #else
+    #define FREE mkl_free
+    #define ALLOCATOR(n, type, align) mkl_calloc(n, type, align)
+  #endif
     
-#define MISSING_MARKER NANF
+  #define CHECKNA std::isnan
+  #define MISSING_MARKER std::nan("1")
 
-    // Forward declaration of the functions
-    int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
-    int pcc_vector(int m, int n, int p, DataType* A, DataType* B, DataType* P);
-    int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+  // Forward declaration of the functions
+  int pcc_matrix(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+  int pcc_vector(int m, int n, int p, DataType* A, DataType* B, DataType* P);
+  int pcc_naive(int m, int n, int p, DataType* A, DataType* B, DataType* P);
 
 #endif //__MPCC_H__
-

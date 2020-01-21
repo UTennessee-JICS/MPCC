@@ -15,7 +15,11 @@
 using namespace std;
 
 #define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
-#define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
+#ifndef USING_R
+  #define __assume_aligned(var,size){ __builtin_assume_aligned(var,size); }
+#else
+  #define __assume_aligned(var,size){  }
+#endif
 #define DEV_CHECKPT printf("Checkpoint: %s, line %d\n", __FILE__, __LINE__); fflush(stdout); 
 
 #ifndef NAIVE //default use matrix version
@@ -25,6 +29,51 @@ using namespace std;
 #ifndef DOUBLE //default to float type
   #define DOUBLE 0
 #endif
+
+#ifdef NOMKL
+  // MKL substitute functions vSqr
+  void vSqr (int l, DataType* in, DataType* out) {
+    int i;
+    #pragma omp parallel for private(i)
+    for(i = 0; i < l; i++) { out[i] = in[i] * in[i]; }
+  }
+  // MKL substitute functions vMul
+  void vMul (int l, DataType* in1, DataType* in2, DataType* out) {
+    int i;
+    #pragma omp parallel for private(i)
+    for(i = 0; i < l; i++) { out[i] = in1[i] * in2[i]; }
+  }
+  // MKL substitute functions vSqrt
+  void vSqrt (int l, DataType* in, DataType* out) {
+    int i;
+    #pragma omp parallel for private(i)
+    for(i = 0; i < l; i++) { out[i] = sqrt(in[i]); }
+  }
+  // MKL substitute functions vDiv
+  void vDiv (int l, DataType* in1, DataType* in2, DataType* out) {
+    int i;
+    #pragma omp parallel for private(i)
+    for(i = 0; i < l; i++) { out[i] = in1[i] / in2[i]; }
+  }
+  // dgemm_wrap function for R_ext/Lapack.h dgemm
+  // Call dgemm_ function pointer using fortran name mangling
+  void dgemm_wrap(const enum CBLAS_ORDER Order, const enum CBLAS_TRANSPOSE TransA,
+                  const enum CBLAS_TRANSPOSE TransB, const int M, const int N,
+                  const int K, const double alpha, const double *A,
+                  const int lda, const double *B, const int ldb,
+                  const double beta, double *C, const int ldc){
+    F77_CALL(dgemm)("T", "N", &N, &M, &K, &alpha, B, &lda, A, &ldb, &beta, C, &N);
+    //F77_CALL(dgemm)("T", "N", &M, &N, &K, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+  }
+  // daxpy_wrap function for R_ext/Lapack.h daxpy
+  // Call daxpy_ function pointer using fortran name mangling
+  void daxpy_wrap(const int N, const double alpha, const double *X,
+                  const int incX, double *Y, const int incY){
+    F77_CALL(daxpy)(&N, &alpha, X, &incX, Y, &incY);
+  }
+#endif
+
+#ifndef USING_R
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
   return (DataType)ts->tv_sec + (DataType)ts->tv_nsec / 1000000000.0;
@@ -42,8 +91,6 @@ DataType convert_to_val(string text)
     else{ val = atof(text.c_str());}
     return val;
 }
-
-#ifndef USING_R
 
 // This function initialized the matrices for m, n, p sized A and the B and result (C) matrices
 // Not part of the R interface since R initializes the memory
@@ -77,10 +124,10 @@ void initialize(int &m, int &n, int &p, int seed,
   }
   //else use default value for m,n
 
-  *A = (DataType *)mkl_calloc( m*n,sizeof( DataType ), 64 ); 
+  *A = (DataType *)ALLOCATOR( m*n,sizeof( DataType ), 64 ); 
   if (*A == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix A. Aborting... \n\n");
-    mkl_free(*A);
+    FREE(*A);
     exit (0);
   }
 
@@ -113,19 +160,19 @@ void initialize(int &m, int &n, int &p, int seed,
   assert(n==_n);
 
   //else use default value for n,p
-  *B = (DataType *)mkl_calloc( n*p,sizeof( DataType ), 64 );
+  *B = (DataType *)ALLOCATOR( n*p,sizeof( DataType ), 64 );
   if (*B == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix B. Aborting... \n\n");
-    mkl_free(*B);
+    FREE(*B);
     exit (0);
   }
 
   printf("m=%d n=%d p=%d\n",m,n,p);
 
-  *C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 ); 
+  *C = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 ); 
   if (*C == NULL ) {
     printf( "\n ERROR: Can't allocate memory for matrix C. Aborting... \n\n");
-    mkl_free(*C);
+    FREE(*C);
     exit (0);
   }
   
@@ -230,7 +277,7 @@ void initialize(int &m, int &n, int &p, int seed,
 
 #endif
 
-#ifndef NOMKL
+#ifndef NOBLAS
 
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
@@ -240,39 +287,39 @@ void initialize(int &m, int &n, int &p, int seed,
 int pcc_matrix(int m, int n, int p,
                DataType* A, DataType* B, DataType* P)
 {
+  // Unused variable warning: int stride = ((n-1)/64 +1);
   int i,j,k;
-  int stride = ((n-1)/64 +1);
-  DataType alpha=1.0;
-  DataType beta=0.0;
-  int count =1;
+  DataType alpha = 1.0;
+  DataType beta = 0.0;
+  int count = 1;
   bool transposeB = true; //assume this is always true. 
   //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
-  DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
+  DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
-  DataType *M = (DataType *) mkl_calloc( m*p, sizeof( DataType ), 64 );
+  DataType *M = (DataType *) ALLOCATOR( m*p, sizeof( DataType ), 64 );
   __assume_aligned(M, 64);
-  DataType* SA =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
+  DataType* SA =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SA, 64);
-  DataType* AA =    ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 ); 
+  DataType* AA =    ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 ); 
   __assume_aligned(AA, 64);
-  DataType* SAA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAA, 64);
-  DataType* SB =    ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
+  DataType* SB =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SB, 64);
-  DataType* BB =    ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 ); 
+  DataType* BB =    ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 ); 
   __assume_aligned(BB, 64);
-  DataType* SBB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 ); 
+  DataType* SBB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SBB, 64);
-  DataType* SAB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAB, 64);
-  DataType* UnitA = ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 );
+  DataType* UnitA = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );
   __assume_aligned(UnitA, 64);
-  DataType* UnitB = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
+  DataType* UnitB = ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
   __assume_aligned(UnitB, 64);  
-  DataType *amask=(DataType*)mkl_calloc( m*n, sizeof(DataType), 64);
+  DataType *amask=(DataType*)ALLOCATOR( m*n, sizeof(DataType), 64);
   __assume_aligned(amask, 64);
-  DataType *bmask=(DataType*)mkl_calloc( n*p, sizeof(DataType), 64);
+  DataType *bmask=(DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
 
   //info("after calloc\n",1);
@@ -280,32 +327,30 @@ int pcc_matrix(int m, int n, int p,
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
   if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
-    printf( "\n ERROR: Can't allocate memory for intermediate matrices. Aborting... \n\n");
-    mkl_free(N);
-    mkl_free(M);
-    mkl_free(SA);
-    mkl_free(AA);
-    mkl_free(SAA);
-    mkl_free(SB);
-    mkl_free(BB);
-    mkl_free(SBB);
-    mkl_free(SAB);
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-    mkl_free(amask);
-    mkl_free(bmask);
+    err("ERROR: Can't allocate memory for intermediate matrices. Aborting...\n", 1);
+    FREE(N);
+    FREE(M);
+    FREE(SA);
+    FREE(AA);
+    FREE(SAA);
+    FREE(SB);
+    FREE(BB);
+    FREE(SBB);
+    FREE(SAB);
+    FREE(UnitA);
+    FREE(UnitB);
+    FREE(amask);
+    FREE(bmask);
     #ifndef USING_R
-    exit (0);
+      exit(0);
     #else
-    return(0);
+      return(0);
     #endif
   } 
 
   //info("before deal missing data\n",1);
-
   //deal with missing data
   for (int ii=0; ii<count; ii++) {
-
     //if element in A is missing, set amask and A to 0
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
@@ -336,7 +381,6 @@ int pcc_matrix(int m, int n, int p,
 
     GEMM(CblasRowMajor, CblasNoTrans, CblasTrans,
          m, p, n, alpha, amask, n, bmask, n, beta, N, p);
-
 
     //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
@@ -395,10 +439,10 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
-    mkl_free(UnitA);
-    mkl_free(UnitB);
-    mkl_free(AA);
-    mkl_free(BB);
+    FREE(UnitA);
+    FREE(UnitB);
+    FREE(AA);
+    FREE(BB);
 
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
@@ -409,17 +453,17 @@ int pcc_matrix(int m, int n, int p,
     //accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
     //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
 
-    DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* NSAB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
    
-    DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
+    DataType* NSAA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
     
-    DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
+    DataType* SBSB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );    
+    DataType* NSBB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb   
     
-    DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
+    DataType* DENOM = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* DENOMSqrt =( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
 
     //Compute and assemble composite terms
 
@@ -455,22 +499,22 @@ int pcc_matrix(int m, int n, int p,
     //P=NSAB/DENOMSqrt (element wise division)
     VDIV(m*p,NSAB,DENOMSqrt,P);   
 
-    mkl_free(SASB);
-    mkl_free(NSAB);
-    mkl_free(SASA);
-    mkl_free(NSAA);
-    mkl_free(SBSB);
-    mkl_free(NSBB);
-    mkl_free(DENOM);
-    mkl_free(DENOMSqrt); 
+    FREE(SASB);
+    FREE(NSAB);
+    FREE(SASA);
+    FREE(NSAA);
+    FREE(SBSB);
+    FREE(NSBB);
+    FREE(DENOM);
+    FREE(DENOMSqrt); 
   }
 
-  mkl_free(N);
-  mkl_free(SA);
-  mkl_free(SAA);
-  mkl_free(SB);
-  mkl_free(SBB);
-  mkl_free(SAB);
+  FREE(N);
+  FREE(SA);
+  FREE(SAA);
+  FREE(SB);
+  FREE(SBB);
+  FREE(SAB);
 
   return 0;
 };
@@ -532,14 +576,14 @@ int pcc_vector(int m, int n, int p,
   // If false, then set Amask or Bmask respectively to ones at that location (masks initialized to zeros)
   // (there may be a more efficent way to do this)
   
-  DataType* Amask = ( DataType*)mkl_calloc( m*n, sizeof(DataType), 64 );
+  DataType* Amask = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );
   __assume_aligned(Amask, 64);
   for(i=0; i<m*n; ++i){
      if(isnan(A[i])){ A[i]=0;}
      else{Amask[i]=ones;}
   }
 
-  DataType* Bmask = ( DataType*)mkl_calloc( n*p, sizeof(DataType), 64 );
+  DataType* Bmask = ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
   __assume_aligned(Bmask, 64);    
   for(i=0; i<p*n; ++i){
      if(isnan(B[i])){ B[i]=0;}
@@ -558,7 +602,7 @@ int pcc_vector(int m, int n, int p,
   //(There may be a faster way to sum values for N using bit ops)
 
   //N contains the number of elements used in each row column PCC calculation (after missing values are removed)
-  DataType *N = (DataType *) mkl_calloc( m*p,sizeof( DataType ), 64 );
+  DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
   for(i=0; i<m; ++i){
      for(j=0; j<p; ++j){
@@ -584,7 +628,7 @@ int pcc_vector(int m, int n, int p,
   //  eliminating the lower triangular redundancy.
   
 
-  DataType* SAB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAB, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(i=0; i<m; ++i){
@@ -598,7 +642,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SA, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(i=0; i<m; ++i){
@@ -614,7 +658,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SB, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(j=0; j<p; ++j){
@@ -630,7 +674,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SAA =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SAA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAA, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(i=0; i<m; ++i){
@@ -647,7 +691,7 @@ int pcc_vector(int m, int n, int p,
     }
   }
 
-  DataType* SBB =   ( DataType*)mkl_calloc( m*p, sizeof(DataType), 64 );
+  DataType* SBB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SBB, 64);
   //#pragma omp parallel for reduction (+:sum)
   for(j=0; j<p; ++j){
@@ -684,24 +728,24 @@ int pcc_vector(int m, int n, int p,
     }
 
     clock_gettime(CLOCK_MONOTONIC, &startGEMM);
-    mkl_free(UnitA);
-    mkl_free(UnitB);
+    FREE(UnitA);
+    FREE(UnitB);
 
     clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
     accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
     //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
 
-    DataType* SASB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* NSAB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* NSAB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
    
-    DataType* SASA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
-    DataType* NSAA = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb
+    DataType* SASA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
+    DataType* NSAA = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
     
-    DataType* SBSB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );    
-    DataType* NSBB = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); //ceb   
+    DataType* SBSB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );    
+    DataType* NSBB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb   
     
-    DataType* DENOM = ( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 );
-    DataType* DENOMSqrt =( DataType*)mkl_calloc( m*p,sizeof(DataType), 64 ); 
+    DataType* DENOM = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
+    DataType* DENOMSqrt =( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
 
     //Compute and assemble composite terms
 
@@ -738,22 +782,22 @@ int pcc_vector(int m, int n, int p,
     //P=SAB/DENOMSqrt (element wise division)
     VDIV(m*p,SAB,DENOMSqrt,P);   
 
-    mkl_free(SASA);
-    mkl_free(SASB);
-    mkl_free(SBSB);
-    mkl_free(NSAB);
-    mkl_free(NSAA);
-    mkl_free(NSBB);
-    mkl_free(DENOM);
-    mkl_free(DENOMSqrt); 
+    FREE(SASA);
+    FREE(SASB);
+    FREE(SBSB);
+    FREE(NSAB);
+    FREE(NSAA);
+    FREE(NSBB);
+    FREE(DENOM);
+    FREE(DENOMSqrt); 
   }
 
-  mkl_free(N);
-  mkl_free(SA);
-  mkl_free(SAA);
-  mkl_free(SB);
-  mkl_free(SBB);
-  mkl_free(SAB);
+  FREE(N);
+  FREE(SA);
+  FREE(SAA);
+  FREE(SB);
+  FREE(SBB);
+  FREE(SAB);
 
   return 0;
 };
@@ -794,7 +838,7 @@ int main (int argc, char **argv) {
    
   bool transposeB=false;
   initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
-  //C = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+  //C = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
   clock_gettime(CLOCK_MONOTONIC, &startPCC);
 #if NAIVE
   printf("naive PCC implmentation\n");
@@ -824,7 +868,7 @@ int main (int argc, char **argv) {
      test_file >> tmp;
      dim2 = tmp;
      printf("dim1=%d dim2=%d dim1*dim2=%d\n",dim1,dim2,dim1*dim2);
-     C = (DataType *)mkl_calloc( dim1*dim2,sizeof( DataType ), 64 );
+     C = (DataType *)ALLOCATOR( dim1*dim2,sizeof( DataType ), 64 );
      for(int i=0;i<dim1*dim2;++i) test_file >> C[i];
      test_file.close();
   }
@@ -850,7 +894,7 @@ int main (int argc, char **argv) {
   C_2norm=sqrt(C_2norm);
   for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
   R_2norm=sqrt(R_2norm);
-  diff = (DataType *)mkl_calloc( m*p,sizeof( DataType ), 64 );
+  diff = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
   for (int i=0; i<m*p; i++) { 
      diff[i]=pow(C[i]-R[i],2);
      diff_2norm += diff[i]; 

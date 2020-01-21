@@ -15,6 +15,9 @@ PCC <- function(aM, bM = NULL, use = NULL, asMatrix = TRUE, debugOn = FALSE) {
   return(res$res)
 }
 
+# MPCC info wrapper
+MPCCinfo <- function() { invisible(.C("R_backendinfo", package = "MPCC")) }
+
 # PCC naive c wrapper
 PCC.naive <- function(aM, bM = NULL, use = NULL, asMatrix = TRUE, debugOn = FALSE) {
   if(is.null(bM)) bM <- aM
