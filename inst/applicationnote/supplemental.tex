@@ -114,11 +114,13 @@ which a check for missing data occurs which zeros out elements at the location o
 each of the matrices $A$, $B$, $U_A$, and $U_B$.
 
 In addition, in the same double nested loops described for the missing data masks, to 
-generate $M$ above, a separate bitmask for each vector in $A$ and for each vector in $B$, 
-is first initialized to all zeros then set to one in every position where there is missing data.
+generate $M$ above, a separate mask for each vector in $A$ and for each vector in $B$, 
+is set to zero in every position where there is missing data and set to ones in remaining positions.
 Then, to find the number of positions where there is no missing data for a given vector $i$ 
-in $A$ and $j$ in $B$ (i.e. a valid correlation), a bitwise OR is done between the corresponding bitmasks, 
-and a bitsum on the result is subtracted from the size of the vector to determine the number of valid
-pairwise correlations for each vector comparison between $A$ and $B$. 
+in $A$ and $j$ in $B$ (i.e. a valid correlation), a pairwise product between the corresponding masks, 
+and sum of the resulting vector is the number of valid
+pairwise correlations for each vector comparison between $A$ and $B$. This operation when done 
+on each pair of vectors $i$ and $j$ is equivalent to matrix-matrix product of masks of 
+$A$ and $B$ and results in $M$.
 
 \end{document}
