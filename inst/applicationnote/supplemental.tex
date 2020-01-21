@@ -99,7 +99,7 @@ elements in the $i$-th vector of $A$, and the $j$-th vector of $B$
 such that there is no missing data in either $A$ or $B$, and $P$ is 
 a matrix of PCC calculations. 
 
-\section{Missing Data Bit-masking} \label{MDBM}
+\section{Missing Data Handling} \label{MDBM}
 In the summation functions of the Matrix version (lines 1-4), we use masking matrices to compute 
 sums efficiently. For example: $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$, where $A_Z$ is the set of 
 vectors $A$ with a zero at every missing data location, and $U_B$ is a matrix of $1's$ with $0's$ 
