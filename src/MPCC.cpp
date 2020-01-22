@@ -297,8 +297,6 @@ int pcc_matrix(int m, int n, int p,
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
-  DataType *M = (DataType *) ALLOCATOR( m*p, sizeof( DataType ), 64 );
-  __assume_aligned(M, 64);
   DataType* SA =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SA, 64);
   DataType* AA =    ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 ); 
@@ -325,11 +323,10 @@ int pcc_matrix(int m, int n, int p,
   //info("after calloc\n",1);
 
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
-  if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
+  if ( (N == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
     err("ERROR: Can't allocate memory for intermediate matrices. Aborting...\n", 1);
     FREE(N);
-    FREE(M);
     FREE(SA);
     FREE(AA);
     FREE(SAA);
