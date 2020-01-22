@@ -282,8 +282,11 @@ void initialize(int &m, int &n, int &p, int seed,
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
-//P = [ sum(AB) - (sumA)(sumB)/N] /
-//    sqrt[ ( sumA^2 -(1/N) (sum A/)^2)[ ( sumB^2 - (1/N)(sum B)^2) ]
+//P = [ sum(AB) - (sumA)(sumB)/N ] /
+//    sqrt([ (sumA^2 -(1/N)(sum A)^2) ][ (sumB^2 - (1/N)(sum B)^2) ])
+//
+//P = [ N*sum(AB) - (sumA)(sumB)] /
+//    sqrt([ (N*sumA^2 - (sum A)^2) ][ (N*sumB^2 - (sum B)^2) ])
 int pcc_matrix(int m, int n, int p,
                DataType* A, DataType* B, DataType* P)
 {
