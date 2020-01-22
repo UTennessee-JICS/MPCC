@@ -414,7 +414,7 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
-    //SB = B*UnitA
+    //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
@@ -431,7 +431,7 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
-    //SBB = BB*UnitA
+    //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
@@ -469,10 +469,10 @@ int pcc_matrix(int m, int n, int p,
 
     //SASB=SA*SB
     VMUL(m*p,SA,SB,SASB);
-    //N*SASB
+    //NSAB=N*SAB
     VMUL(m*p,N,SAB,NSAB); //ceb
 
-    //NSAB=(-1)NSASB+SAB  (numerator)
+    //NSAB=(-1)NSAB+SASB  (numerator)
     AXPY(m*p,(DataType)(-1), SASB,1, NSAB,1); //ceb
 
     //(SA)^2
