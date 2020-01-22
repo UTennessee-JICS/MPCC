@@ -296,6 +296,8 @@ int pcc_matrix(int m, int n, int p,
   DataType beta = 0.0;
   int count = 1;
   bool transposeB = true; //assume this is always true. 
+  bool sameAB = (p == 0) ? true : false;
+  if(p == 0)  p = m;
   //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
@@ -306,21 +308,21 @@ int pcc_matrix(int m, int n, int p,
   __assume_aligned(AA, 64);
   DataType* SAA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAA, 64);
-  DataType* SB =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
+  DataType* SB =    sameAB ? SA : ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SB, 64);
-  DataType* BB =    ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 ); 
+  DataType* BB =    sameAB ? AA : ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 ); 
   __assume_aligned(BB, 64);
-  DataType* SBB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
+  DataType* SBB =   sameAB ? SAA : ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SBB, 64);
   DataType* SAB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAB, 64);
   DataType* UnitA = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );
   __assume_aligned(UnitA, 64);
-  DataType* UnitB = ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
+  DataType* UnitB = sameAB ? UnitA : ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
   __assume_aligned(UnitB, 64);  
   DataType *amask=(DataType*)ALLOCATOR( m*n, sizeof(DataType), 64);
   __assume_aligned(amask, 64);
-  DataType *bmask=(DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
+  DataType *bmask= sameAB ? amask : (DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
 
   //info("after calloc\n",1);
@@ -333,14 +335,16 @@ int pcc_matrix(int m, int n, int p,
     FREE(SA);
     FREE(AA);
     FREE(SAA);
-    FREE(SB);
-    FREE(BB);
-    FREE(SBB);
     FREE(SAB);
     FREE(UnitA);
-    FREE(UnitB);
     FREE(amask);
-    FREE(bmask);
+    if(!sameAB) { //only do it when A and B are not same
+      FREE(SB);
+      FREE(BB);
+      FREE(SBB);
+      FREE(UnitB);
+      FREE(bmask);
+    }
     #ifndef USING_R
       exit(0);
     #else
@@ -365,16 +369,18 @@ int pcc_matrix(int m, int n, int p,
       }
     }
 
-    //if element in B is missing, set bmask and B to 0
-    #pragma omp parallel for private (j,k)
-    for (j=0; j<p; j++) {
-      for (k=0; k<n; k++) {
-        if (CHECKNA(B[j*n+k])) { 
-          bmask[j*n + k] = 0.0;
-          B[j*n + k] = 0.0; // set B to 0.0 for subsequent calculations of PCC terms
-        }else{
-          bmask[ j*n + k ] = 1.0;
-          UnitB[j*n + k] = 1.0;
+    if(!sameAB) { //only do it when A and B are not same
+      //if element in B is missing, set bmask and B to 0
+      #pragma omp parallel for private (j,k)
+      for (j=0; j<p; j++) {
+        for (k=0; k<n; k++) {
+          if (CHECKNA(B[j*n+k])) { 
+            bmask[j*n + k] = 0.0;
+            B[j*n + k] = 0.0; // set B to 0.0 for subsequent calculations of PCC terms
+          }else{
+            bmask[ j*n + k ] = 1.0;
+            UnitB[j*n + k] = 1.0;
+          }
         }
       }
     }
@@ -386,7 +392,8 @@ int pcc_matrix(int m, int n, int p,
     VSQR(m*n,A,AA);
 
     //vsSqr(n*p,B,BB);
-    VSQR(n*p,B,BB);
+    if(!sameAB) //only do it when A and B are not same
+      VSQR(n*p,B,BB);
 
     //variables used for performance timing
     //struct timespec startGEMM, stopGEMM;
@@ -419,7 +426,8 @@ int pcc_matrix(int m, int n, int p,
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
+    if(!sameAB) //only do it when A and B are not same
+      GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
 
@@ -436,13 +444,16 @@ int pcc_matrix(int m, int n, int p,
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
+    if(!sameAB) //only do it when A and B are not same
+      GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
     FREE(UnitA);
-    FREE(UnitB);
     FREE(AA);
-    FREE(BB);
+    if(!sameAB) { //only do it when A and B are not same
+      FREE(UnitB);
+      FREE(BB);
+    }
 
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
@@ -468,7 +479,15 @@ int pcc_matrix(int m, int n, int p,
     //Compute and assemble composite terms
 
     //SASB=SA*SB
-    VMUL(m*p,SA,SB,SASB);
+    if(!sameAB)
+      VMUL(m*p,SA,SB,SASB);
+    else {
+      #pragma omp parallel for private(i, j)
+      for(int i = 0; i < m; i++)
+        for(int j = 0; j < p; j++) {
+          SASB[i*m + j] = SA[i*m + j] * SB[j*m + i];
+        }
+    }
     //NSAB=N*SAB
     VMUL(m*p,N,SAB,NSAB); //ceb
 
@@ -483,9 +502,25 @@ int pcc_matrix(int m, int n, int p,
     AXPY(m*p,(DataType)(-1), SASA,1, NSAA,1);
 
     //(SB)^2
-    VSQR(m*p,SB,SBSB);
+    if(!sameAB)
+      VSQR(m*p,SB,SBSB);
+    else {
+      #pragma omp parallel for private(i, j)
+      for(int i = 0; i < m; i++)
+        for(int j = 0; j < p; j++) {
+          SBSB[i*m + j] = SB[j*m + i] * SB[j*m + i];
+        }
+    }
     //N(SBB)
-    VMUL(m*p,N,SBB,NSBB);
+    if(!sameAB)
+      VMUL(m*p,N,SBB,NSBB);
+    else {
+      #pragma omp parallel for private(i, j)
+      for(int i = 0; i < m; i++)
+        for(int j = 0; j < p; j++) {
+          NSBB[i*m + j] = N[i*m + j] * SBB[j*m + i];
+        }
+    }
     //NSBB=NSBB-SBSB (denominatr term 2)
     AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
 
@@ -513,8 +548,10 @@ int pcc_matrix(int m, int n, int p,
   FREE(N);
   FREE(SA);
   FREE(SAA);
-  FREE(SB);
-  FREE(SBB);
+  if(!sameAB) { //only do it when A and B are not same
+    FREE(SB);
+    FREE(SBB);
+  }
   FREE(SAB);
 
   return 0;
