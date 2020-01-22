@@ -491,6 +491,7 @@ int pcc_matrix(int m, int n, int p,
 
     //DENOM=NSAA*NSBB (element wise multiplication)
     VMUL(m*p,NSAA,NSBB,DENOM);
+    #pragma omp parallel for private (i)
     for(int i=0;i<m*p;++i){
        if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
     }
