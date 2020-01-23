@@ -392,8 +392,8 @@ int pcc_matrix(int m, int n, int p,
     VSQR(m*n,A,AA);
 
     //vsSqr(n*p,B,BB);
-    if(!sameAB) //only do it when A and B are not same
-      VSQR(n*p,B,BB);
+    if(!sameAB) VSQR(n*p,B,BB); // Only perform VSQR when A and B are not same
+      
 
     //variables used for performance timing
     //struct timespec startGEMM, stopGEMM;
@@ -426,9 +426,10 @@ int pcc_matrix(int m, int n, int p,
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    if(!sameAB) //only do it when A and B are not same
+    if (!sameAB) { //only do it when A and B are not same
       GEMM(CblasRowMajor, CblasNoTrans, transB,
-         m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
+         m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p);
+    }
 
 
     //SAA = AA*UnitB
@@ -444,13 +445,14 @@ int pcc_matrix(int m, int n, int p,
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    if(!sameAB) //only do it when A and B are not same
+    if (!sameAB) { //only do it when A and B are not same
       GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
+    }
 
     FREE(UnitA);
     FREE(AA);
-    if(!sameAB) { //only do it when A and B are not same
+    if (!sameAB) { //only do it when A and B are not same
       FREE(UnitB);
       FREE(BB);
     }
@@ -479,14 +481,15 @@ int pcc_matrix(int m, int n, int p,
     //Compute and assemble composite terms
 
     //SASB=SA*SB
-    if(!sameAB)
+    if (!sameAB) {
       VMUL(m*p,SA,SB,SASB);
-    else {
+    } else {
       #pragma omp parallel for private(i, j)
-      for(int i = 0; i < m; i++)
+      for(int i = 0; i < m; i++) {
         for(int j = 0; j < p; j++) {
           SASB[i*m + j] = SA[i*m + j] * SB[j*m + i];
         }
+      }
     }
     //NSAB=N*SAB
     VMUL(m*p,N,SAB,NSAB); //ceb
@@ -506,20 +509,22 @@ int pcc_matrix(int m, int n, int p,
       VSQR(m*p,SB,SBSB);
     else {
       #pragma omp parallel for private(i, j)
-      for(int i = 0; i < m; i++)
+      for(int i = 0; i < m; i++) {
         for(int j = 0; j < p; j++) {
           SBSB[i*m + j] = SB[j*m + i] * SB[j*m + i];
         }
+      }
     }
     //N(SBB)
     if(!sameAB)
       VMUL(m*p,N,SBB,NSBB);
     else {
       #pragma omp parallel for private(i, j)
-      for(int i = 0; i < m; i++)
+      for(int i = 0; i < m; i++) {
         for(int j = 0; j < p; j++) {
           NSBB[i*m + j] = N[i*m + j] * SBB[j*m + i];
         }
+      }
     }
     //NSBB=NSBB-SBSB (denominatr term 2)
     AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
@@ -527,7 +532,7 @@ int pcc_matrix(int m, int n, int p,
     //DENOM=NSAA*NSBB (element wise multiplication)
     VMUL(m*p,NSAA,NSBB,DENOM);
     #pragma omp parallel for private (i)
-    for(int i=0;i<m*p;++i){
+    for (int i = 0;i < m*p;++i) {
        if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
     }
     //sqrt(DENOM)
@@ -548,7 +553,7 @@ int pcc_matrix(int m, int n, int p,
   FREE(N);
   FREE(SA);
   FREE(SAA);
-  if(!sameAB) { //only do it when A and B are not same
+  if (!sameAB) { //only do it when A and B are not same
     FREE(SB);
     FREE(SBB);
   }
