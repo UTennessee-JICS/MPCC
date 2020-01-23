@@ -359,11 +359,11 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
+        amask[ i*n + k ] = 1.0;
         if (CHECKNA(A[i*n+k])) { 
           amask[i*n + k] = 0.0;
           A[i*n + k] = 0.0; // set A to 0.0 for subsequent calculations of PCC terms
-        }else{
-          amask[ i*n + k ] = 1.0;
+        } else {
           UnitA[i*n + k] = 1.0;
         }
       }
@@ -374,11 +374,11 @@ int pcc_matrix(int m, int n, int p,
       #pragma omp parallel for private (j,k)
       for (j=0; j<p; j++) {
         for (k=0; k<n; k++) {
+          bmask[ j*n + k ] = 1.0;
           if (CHECKNA(B[j*n+k])) { 
             bmask[j*n + k] = 0.0;
             B[j*n + k] = 0.0; // set B to 0.0 for subsequent calculations of PCC terms
-          }else{
-            bmask[ j*n + k ] = 1.0;
+          } else {
             UnitB[j*n + k] = 1.0;
           }
         }
