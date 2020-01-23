@@ -11,7 +11,7 @@ PCC <- function(aM, bM = NULL, use = NULL, asMatrix = TRUE, debugOn = FALSE) {
   res <- .C("R_pcc_matrix", aM = as.double(aM),
                             bM = as.double(bM),
                             n = as.integer(nrow(aM)), # nInd
-                            m = as.integer(m), # nPhe A
+                            m = as.integer(ncol(aM)), # nPhe A
                             p = as.integer(p), # nPhe B
                             res = as.double(rep(0, ncol(aM) * dim2)), NAOK = TRUE, package = "MPCC")
 
