@@ -282,8 +282,11 @@ void initialize(int &m, int &n, int &p, int seed,
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
-//P = [ sum(AB) - (sumA)(sumB)/N] /
-//    sqrt[ ( sumA^2 -(1/N) (sum A/)^2)[ ( sumB^2 - (1/N)(sum B)^2) ]
+//P = [ sum(AB) - (sumA)(sumB)/N ] /
+//    sqrt([ (sumA^2 -(1/N)(sum A)^2) ][ (sumB^2 - (1/N)(sum B)^2) ])
+//
+//P = [ N*sum(AB) - (sumA)(sumB)] /
+//    sqrt([ (N*sumA^2 - (sum A)^2) ][ (N*sumB^2 - (sum B)^2) ])
 int pcc_matrix(int m, int n, int p,
                DataType* A, DataType* B, DataType* P)
 {
@@ -293,54 +296,55 @@ int pcc_matrix(int m, int n, int p,
   DataType beta = 0.0;
   int count = 1;
   bool transposeB = true; //assume this is always true. 
+  bool sameAB = (p == 0) ? true : false;
+  if(p == 0)  p = m;
   //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
-  DataType *M = (DataType *) ALLOCATOR( m*p, sizeof( DataType ), 64 );
-  __assume_aligned(M, 64);
   DataType* SA =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SA, 64);
   DataType* AA =    ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 ); 
   __assume_aligned(AA, 64);
   DataType* SAA =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAA, 64);
-  DataType* SB =    ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
+  DataType* SB =    sameAB ? SA : ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SB, 64);
-  DataType* BB =    ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 ); 
+  DataType* BB =    sameAB ? AA : ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 ); 
   __assume_aligned(BB, 64);
-  DataType* SBB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
+  DataType* SBB =   sameAB ? SAA : ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 ); 
   __assume_aligned(SBB, 64);
   DataType* SAB =   ( DataType*)ALLOCATOR( m*p, sizeof(DataType), 64 );
   __assume_aligned(SAB, 64);
   DataType* UnitA = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );
   __assume_aligned(UnitA, 64);
-  DataType* UnitB = ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
+  DataType* UnitB = sameAB ? UnitA : ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );
   __assume_aligned(UnitB, 64);  
   DataType *amask=(DataType*)ALLOCATOR( m*n, sizeof(DataType), 64);
   __assume_aligned(amask, 64);
-  DataType *bmask=(DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
+  DataType *bmask= sameAB ? amask : (DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
 
   //info("after calloc\n",1);
 
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
-  if ( (N == NULL) | (M == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
+  if ( (N == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
       (SBB == NULL) | (SAB == NULL) | (UnitA == NULL) | (UnitB == NULL) | (amask == NULL) | (bmask == NULL)) {
     err("ERROR: Can't allocate memory for intermediate matrices. Aborting...\n", 1);
     FREE(N);
-    FREE(M);
     FREE(SA);
     FREE(AA);
     FREE(SAA);
-    FREE(SB);
-    FREE(BB);
-    FREE(SBB);
     FREE(SAB);
     FREE(UnitA);
-    FREE(UnitB);
     FREE(amask);
-    FREE(bmask);
+    if(!sameAB) { //only do it when A and B are not same
+      FREE(SB);
+      FREE(BB);
+      FREE(SBB);
+      FREE(UnitB);
+      FREE(bmask);
+    }
     #ifndef USING_R
       exit(0);
     #else
@@ -355,26 +359,28 @@ int pcc_matrix(int m, int n, int p,
     #pragma omp parallel for private (i,k)
     for (i=0; i<m; i++) {
       for (k=0; k<n; k++) {
-        amask[ i*n + k ] = 1.0;
         if (CHECKNA(A[i*n+k])) { 
           amask[i*n + k] = 0.0;
           A[i*n + k] = 0.0; // set A to 0.0 for subsequent calculations of PCC terms
         }else{
+          amask[ i*n + k ] = 1.0;
           UnitA[i*n + k] = 1.0;
         }
       }
     }
 
-    //if element in B is missing, set bmask and B to 0
-    #pragma omp parallel for private (j,k)
-    for (j=0; j<p; j++) {
-      for (k=0; k<n; k++) {
-        bmask[ j*n + k ] = 1.0;
-        if (CHECKNA(B[j*n+k])) { 
-          bmask[j*n + k] = 0.0;
-          B[j*n + k] = 0.0; // set B to 0.0 for subsequent calculations of PCC terms
-        }else{
-          UnitB[j*n + k] = 1.0;
+    if(!sameAB) { //only do it when A and B are not same
+      //if element in B is missing, set bmask and B to 0
+      #pragma omp parallel for private (j,k)
+      for (j=0; j<p; j++) {
+        for (k=0; k<n; k++) {
+          if (CHECKNA(B[j*n+k])) { 
+            bmask[j*n + k] = 0.0;
+            B[j*n + k] = 0.0; // set B to 0.0 for subsequent calculations of PCC terms
+          }else{
+            bmask[ j*n + k ] = 1.0;
+            UnitB[j*n + k] = 1.0;
+          }
         }
       }
     }
@@ -386,7 +392,8 @@ int pcc_matrix(int m, int n, int p,
     VSQR(m*n,A,AA);
 
     //vsSqr(n*p,B,BB);
-    VSQR(n*p,B,BB);
+    if(!sameAB) //only do it when A and B are not same
+      VSQR(n*p,B,BB);
 
     //variables used for performance timing
     //struct timespec startGEMM, stopGEMM;
@@ -414,12 +421,13 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
 
-    //SB = B*UnitA
+    //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
+    if(!sameAB) //only do it when A and B are not same
+      GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p); 
 
 
@@ -431,18 +439,21 @@ int pcc_matrix(int m, int n, int p,
     GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
 
-    //SBB = BB*UnitA
+    //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
-    GEMM(CblasRowMajor, CblasNoTrans, transB,
+    if(!sameAB) //only do it when A and B are not same
+      GEMM(CblasRowMajor, CblasNoTrans, transB,
          m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
 
     FREE(UnitA);
-    FREE(UnitB);
     FREE(AA);
-    FREE(BB);
+    if(!sameAB) { //only do it when A and B are not same
+      FREE(UnitB);
+      FREE(BB);
+    }
 
     //SAB = A*B
     //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
@@ -468,11 +479,19 @@ int pcc_matrix(int m, int n, int p,
     //Compute and assemble composite terms
 
     //SASB=SA*SB
-    VMUL(m*p,SA,SB,SASB);
-    //N*SASB
+    if(!sameAB)
+      VMUL(m*p,SA,SB,SASB);
+    else {
+      #pragma omp parallel for private(i, j)
+      for(int i = 0; i < m; i++)
+        for(int j = 0; j < p; j++) {
+          SASB[i*m + j] = SA[i*m + j] * SB[j*m + i];
+        }
+    }
+    //NSAB=N*SAB
     VMUL(m*p,N,SAB,NSAB); //ceb
 
-    //NSAB=(-1)NSASB+SAB  (numerator)
+    //NSAB=(-1)NSAB+SASB  (numerator)
     AXPY(m*p,(DataType)(-1), SASB,1, NSAB,1); //ceb
 
     //(SA)^2
@@ -483,14 +502,31 @@ int pcc_matrix(int m, int n, int p,
     AXPY(m*p,(DataType)(-1), SASA,1, NSAA,1);
 
     //(SB)^2
-    VSQR(m*p,SB,SBSB);
+    if(!sameAB)
+      VSQR(m*p,SB,SBSB);
+    else {
+      #pragma omp parallel for private(i, j)
+      for(int i = 0; i < m; i++)
+        for(int j = 0; j < p; j++) {
+          SBSB[i*m + j] = SB[j*m + i] * SB[j*m + i];
+        }
+    }
     //N(SBB)
-    VMUL(m*p,N,SBB,NSBB);
+    if(!sameAB)
+      VMUL(m*p,N,SBB,NSBB);
+    else {
+      #pragma omp parallel for private(i, j)
+      for(int i = 0; i < m; i++)
+        for(int j = 0; j < p; j++) {
+          NSBB[i*m + j] = N[i*m + j] * SBB[j*m + i];
+        }
+    }
     //NSBB=NSBB-SBSB (denominatr term 2)
     AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
 
     //DENOM=NSAA*NSBB (element wise multiplication)
     VMUL(m*p,NSAA,NSBB,DENOM);
+    #pragma omp parallel for private (i)
     for(int i=0;i<m*p;++i){
        if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
     }
@@ -512,8 +548,10 @@ int pcc_matrix(int m, int n, int p,
   FREE(N);
   FREE(SA);
   FREE(SAA);
-  FREE(SB);
-  FREE(SBB);
+  if(!sameAB) { //only do it when A and B are not same
+    FREE(SB);
+    FREE(SBB);
+  }
   FREE(SAB);
 
   return 0;
