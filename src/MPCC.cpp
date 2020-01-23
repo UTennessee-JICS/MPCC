@@ -404,7 +404,6 @@ int pcc_matrix(int m, int n, int p,
 
     //vsSqr(n*p,B,BB);
     if (!sameAB) { VSQR(n*p,B,BB); } // Only perform VSQR when A and B are not same
-      
 
     //variables used for performance timing
     //struct timespec startGEMM, stopGEMM;
@@ -413,8 +412,6 @@ int pcc_matrix(int m, int n, int p,
     //info("before PCC terms\n",1);
 
     //Compute PCC terms and assemble
-     
-
     CBLAS_TRANSPOSE transB=CblasNoTrans;
     int ldb=p;
     if(transposeB){
@@ -490,7 +487,6 @@ int pcc_matrix(int m, int n, int p,
     DataType* DENOMSqrt =( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); 
 
     //Compute and assemble composite terms
-
     //SASB=SA*SB
     if (!sameAB) {
       VMUL(m*p,SA,SB,SASB);
