@@ -2,19 +2,19 @@
 
 # PCC matrix c wrapper
 PCC <- function(aM, bM = NULL, use = NULL, asMatrix = TRUE, debugOn = FALSE) {
-  n = as.integer(nrow(aM))
-  m = as.integer(ncol(aM))
+  n = nrow(aM)
+  m = ncol(aM)
   if(is.null(bM)) {
     p = 0
     bM <- aM
   } else {
-    p = as.integer(ncol(bM))
+    p = ncol(bM)
   }
   res <- .C("R_pcc_matrix", aM = as.double(aM),
                             bM = as.double(bM),
-                            n, # nInd
-                            m, # nPhe A
-                            p, # nPhe B
+                            n = as.integer(n), # nInd
+                            m = as.integer(m), # nPhe A
+                            p = as.integer(p), # nPhe B
                             res = as.double(rep(0, ncol(aM) * ncol(bM))), NAOK = TRUE, package = "MPCC")
 
   if(asMatrix) res$res <- matrix(res$res, ncol(aM), ncol(bM), byrow=TRUE, dimnames = list(colnames(aM), colnames(bM)))
