@@ -73,6 +73,17 @@ using namespace std;
   }
 #endif
 
+// vMul function when input matrix A == B
+void vMulSameAB(int m, int p, DataType* in1, DataType* in2, DataType* out){
+  int i, j;
+  #pragma omp parallel for private(i, j)
+  for(i = 0; i < m; i++) {
+    for(j = 0; j < p; j++) {
+      out[i*m + j] = in1[i*m + j] * in2[j*m + i];
+    }
+  }
+}
+
 #ifndef USING_R
 
 static DataType TimeSpecToSeconds(struct timespec* ts){
@@ -369,7 +380,7 @@ int pcc_matrix(int m, int n, int p,
       }
     }
 
-    if(!sameAB) { //only do it when A and B are not same
+    if (!sameAB) { //only do it when A and B are not same
       //if element in B is missing, set bmask and B to 0
       #pragma omp parallel for private (j,k)
       for (j=0; j<p; j++) {
@@ -392,7 +403,7 @@ int pcc_matrix(int m, int n, int p,
     VSQR(m*n,A,AA);
 
     //vsSqr(n*p,B,BB);
-    if(!sameAB) VSQR(n*p,B,BB); // Only perform VSQR when A and B are not same
+    if (!sameAB) { VSQR(n*p,B,BB); } // Only perform VSQR when A and B are not same
       
 
     //variables used for performance timing
@@ -484,12 +495,7 @@ int pcc_matrix(int m, int n, int p,
     if (!sameAB) {
       VMUL(m*p,SA,SB,SASB);
     } else {
-      #pragma omp parallel for private(i, j)
-      for(int i = 0; i < m; i++) {
-        for(int j = 0; j < p; j++) {
-          SASB[i*m + j] = SA[i*m + j] * SB[j*m + i];
-        }
-      }
+      vMulSameAB(m,p,SA,SB,SASB);
     }
     //NSAB=N*SAB
     VMUL(m*p,N,SAB,NSAB); //ceb
@@ -505,9 +511,9 @@ int pcc_matrix(int m, int n, int p,
     AXPY(m*p,(DataType)(-1), SASA,1, NSAA,1);
 
     //(SB)^2
-    if(!sameAB)
+    if (!sameAB) {
       VSQR(m*p,SB,SBSB);
-    else {
+    } else {
       #pragma omp parallel for private(i, j)
       for(int i = 0; i < m; i++) {
         for(int j = 0; j < p; j++) {
@@ -516,15 +522,10 @@ int pcc_matrix(int m, int n, int p,
       }
     }
     //N(SBB)
-    if(!sameAB)
+    if (!sameAB) {
       VMUL(m*p,N,SBB,NSBB);
-    else {
-      #pragma omp parallel for private(i, j)
-      for(int i = 0; i < m; i++) {
-        for(int j = 0; j < p; j++) {
-          NSBB[i*m + j] = N[i*m + j] * SBB[j*m + i];
-        }
-      }
+    } else {
+      vMulSameAB(m, p, N, SBB, NSBB);
     }
     //NSBB=NSBB-SBSB (denominatr term 2)
     AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
