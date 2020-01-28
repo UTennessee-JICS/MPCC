@@ -2,12 +2,17 @@
 
 # PCC matrix c wrapper
 PCC <- function(aM, bM = NULL, use = NULL, asMatrix = TRUE, debugOn = FALSE) {
-  if(is.null(bM)) bM <- aM
+  if (is.null(bM)) {
+    bM <- aM
+    p <- 0    
+  } else { # We have a second matrix
+    p <- ncol(bM)
+  }
   res <- .C("R_pcc_matrix", aM = as.double(aM),
                             bM = as.double(bM),
                             n = as.integer(nrow(aM)), # nInd
                             m = as.integer(ncol(aM)), # nPhe A
-                            p = as.integer(ncol(bM)), # nPhe B
+                            p = as.integer(p), # nPhe B
                             res = as.double(rep(0, ncol(aM) * ncol(bM))), NAOK = TRUE, package = "MPCC")
 
   if(asMatrix) res$res <- matrix(res$res, ncol(aM), ncol(bM), byrow=TRUE, dimnames = list(colnames(aM), colnames(bM)))
