@@ -39,7 +39,33 @@ addressed.}
 
 \editor{Associate Editor: XXXXXXX}
 
-\abstract{\textbf{Motivation:}
+\abstract{ \textbf{Motivation:} The computation of correlations is
+  pervasive in biology. With the rapidly growing amount of
+  experimental biological data we find that computing correlations for
+  networks of relations between genotypes and phenotypes is a
+  bottleneck, particularly when dealing with missing data. Here we present a high
+  performance and robust matrix-based Pearson correlation coefficent
+  (MPCC) algorithm with an implementation in C that handles missing
+  data and makes effective use of modern CPU AVX extensions and
+  outperforms existing methods by an order of
+  magnitude. \\ \textbf{Results:} Our method is a reformulation of the
+  PCC algorithm in that the lion's share of the computation is done
+  using matrix-matrix products and achieves 4.3 TFlop/s in single
+  precision ($77\%$ of the theoretical peak) on a single Intel Xeon
+  Gold 6148 CPU $@$ $2.4$ GHz (Skylake) cpu. With R, for example, this
+  translates to a $120x$ speedup. We display how MPCC outperforms the
+  existing R implementation using OpenBLAS and MKL matrix libraries on
+  a multi-core architecture. \\ \textbf{Availability:} Code is
+  available in C\raise .8ex \hbox{$_{++}$} and The R Project for
+  Statistical Computing, under a free and open source software GPL-v3
+  licence at
+  \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\ \textbf{Contact:}
+  \href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\ \textbf{Supplementary
+    information:} Supplementary data are available at
+  \textit{Bioinformatics} online.}
+
+\maketitle
+
 The work presented is motivated by GeneNetwork.org, which performs a
 matrix of Pearson$'$s Correlation Coefficient (PCC) calculations in
 the presence of missing data to find relationships between and among
@@ -47,22 +73,7 @@ genotypes and phenotypes in mouse strains. The calculations are a
 bottleneck for moderate to large problem sizes. Calculating PCC is
 pervasive across bioinformatics, data analysis, phylogenetics,
 statistics, stochastics, and anthropology. Our approach can be used
-whenever a PCC matrix is computed.\\ \textbf{Results:} Our solution is
-a reformulation of the PCC algorithm such that the lion's share of the
-computation is done using matrix-matrix products and achieves 4.3
-TFlop/s in single precision (77\% of the theoretical peak) on a single
-Intel Xeon Gold 6148 CPU $@$ 2.4 GHz (Skylake) cpu. With R, for
-example, this translates to as much as a 120x speedup.\\
-\textbf{Availability:} Code is available for C\raise .8ex \hbox{$_{++}$} and The R Project for Statistical
-Computing, under an GPL-v3 licence  at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
-\textbf{Contact:}
-\href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\
-\textbf{Supplementary information:} Supplementary data are
-available at \textit{Bioinformatics} online.}
-
-FIXME: download
-
-\maketitle
+whenever a PCC matrix is computed.
 
 \section{Introduction}
 Biology has driven innovation in statistics from the early days. Pearson, Fischer,
