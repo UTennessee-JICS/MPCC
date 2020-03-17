@@ -39,7 +39,7 @@ addressed.}
 
 \editor{Associate Editor: XXXXXXX}
 
-\abstract{ \textbf{Motivation:}  Here we present a novel
+\abstract{ \textbf{Motivation:}  We present a novel
   high performance and robust matrix-based Pearson correlation
   coefficent (MPCC) algorithm that handles missing data and makes
   effective use of modern CPU Advanced Vector Extensions (AVX)
@@ -90,40 +90,36 @@ mapping \citep{Arends2016a}.
 \enlargethispage{12pt}
 
 The work presented here is motivated by Genenetwork, a service for
-web-based for genetics which routinely performs a matrix of Pearson's
-Correlation Coefficient (PCC) calculations to find relationships
-between and among genotypes and phenotypes in mouse and rat
-strains \citep{Sloan2016}. These calculations are a bottleneck for
-moderate to large problem sizes, especially when accounting for
-missing data.
+web-based genetics \citep{Sloan2016} which routinely performs a matrix
+of Pearson's Correlation Coefficient (PCC) calculations to find
+relationships between and among genotypes and phenotypes in mouse and
+rat strains. These calculations are a bottleneck for moderate to large
+problem sizes, especially when accounting for missing data.
 
 For example, the BxD family is a panel of 150 recombinant inbred mice
 derived from parents C57BL/6J and DBA/2J, The BxD data collection in
 Genenetwork consists of 7,000 hand curated classical phenotypes,
 high-density genotypes, and over 100 'omics' data
-sets \citep{Ashbrook:2019}.  Consider the case where, for a set of
-individuals, pairwise correlation is computed amongst the set of
-phenotypes for those individuals. Strategy 1 is to remove all
-individuals that contain any missing phenotype data. This is
-undesirable in biological data because often there are no individuals
-without at least some missing data. Strategy 2 handles missing data on
-a case by case basis, which significantly increases the algorithms
-runtime.
+sets \citep{Ashbrook:2019}.  Consider the case where pairwise
+correlation is computed within the set of phenotypes for a set of
+individuals. The first strategy is to remove all individuals that
+contain any missing phenotype data. This turns out to be undesirable
+because most individuals have some missing data. The second strategy
+handles missing data on a case by case basis which significantly
+increases the runtime of the default implemenation of the Pearson's
+correlation in the R language for statistical
+computing \citep{R:2005}; provided by the standard $cor()$
+function. $cor()$ is implemented as a C function (FIXME? Not FORTRAN?)
+This function is slow when handling missing data.  In addition,
+$cor()$ lacks support for multi-threading. This limitation can be
+worked around by using the $parallel$ library. This library, however,
+has significant overheads and not straightforward to use. (FIXME?
+Check our tests acutually using parallel).
 
 % All BxD phenotype, genotype, and omics data is freely available on
 % \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}.
 % GeneNetwork is an online platform for data storage and analysis,
 % including Pearson's correlation.
-
-The Pearson's correlation in the R language for statistical
-computing \citep{R:2005} is provided by the standard $cor()$
-function. It is implemented as a C function (FIXME? Not FORTRAN?)  and
-is slow when handling missing data.  An additional issue is that
-$cor()$ lacks support for multi-threading. This limitation can be
-worked around by using the $parallel$ library. This library has
-significant overheads and not straightforward to use. (FIXME? Check
-our tests acutually use parallel).
-
 % and performs well when no missing data is present. In the
 % case of missing data, however, two strategies are used to deal with the
 % missing data.
@@ -136,10 +132,10 @@ our tests acutually use parallel).
   \vspace*{-7mm}
   \caption{
     Runtime speedup of MPCC versus the R $cor$ function shows
-    increasing speedup with growing matrix sizes. However,
-    speedup is negatively affected by increasing percentage of
-    missing data, because of increased computational load in the
-    missing data preparation step.
+    increasing speedup with growing matrix sizes.
+    Speedup (colors) is negatively affected by increasing percentage of
+    missing data because of a
+    missing data preparation step. FIXME: improve caption
   }
   \label{fig:fig2}
   \vspace*{-5mm}
@@ -147,20 +143,19 @@ our tests acutually use parallel).
 
 \section{Approach}
 
-\textbf{The Naive Version}\\
-The Naive version of the MPCC algorithm was developed to be
-algorithmically identical to the R $cor()$ function (Supplement 1 -
-'The Naive Version'). Multi-threading support without additional
-overhead is provided by OpenMP. The Naive version provides a fair
-multi-threaded baseline against the Matrix version. It also provides a
-multi-threaded fallback in R when no Intel\textregistered{} Math
-Kernel Library (Intel\textregistered{} MKL) is available.\\
-\textbf{The Matrix Version}\\
-The Matrix version reformulates the naive version of the PCC algorithm
+\textbf{Naive Version}\\
+The naive version of the MPCC algorithm was developed to be
+algorithmically identical to the R $cor()$ function (see supplement). Multi-threading support without additional overhead is provided by
+OpenMP. The naive version provides a fair multi-threaded baseline
+against the matrix version. It also provides a multi-threaded fallback
+in R when no Intel\textregistered{} Math Kernel Library
+(Intel\textregistered{} MKL) is available. (FIXME clarify)\\
+\textbf{Matrix Version}\\
+The matrix version reformulates the naive version of the PCC algorithm
 into a series of matrix-matrix products and element-wise matrix operations.
-Missing data is handled by a bit-masking approach implemented in C.
+Missing data is handled by a novel bit-masking approach implemented in C.
 Reformulation of the algorithm and our missing data strategy is described
-in detail in Supplement 1 - 'The Matrix Version' and 'Missing Data Bit-masking'.
+in detail (see supplement).
 
 \vspace*{-5mm}
 
