@@ -39,29 +39,29 @@ addressed.}
 
 \editor{Associate Editor: XXXXXXX}
 
-\abstract{ \textbf{Motivation:} Computation of correlations has
+\abstract{ \textbf{Motivation:}  Here we present a novel
+  high performance and robust matrix-based Pearson correlation
+  coefficent (MPCC) algorithm that handles missing data and makes
+  effective use of modern CPU Advanced Vector Extensions (AVX)
+  extensions. Computation of correlations has
   common use in biomedical applications and research. With the rapidly
   growing amount of data acquired from sequencing, combined with
   growing body of phenotype data from medical and experimental
   biology, we find that computing correlations in networks of
   relations is a recurring bottleneck. Especially computations of
-  correlations with incomplete data are slow.  Here we present a novel
-  high performance and robust matrix-based Pearson correlation
-  coefficent (MPCC) algorithm that handles missing data and makes
-  effective use of modern CPU Advanced Vector Extensions (AVX)
-  extensions. The reference MPCC algorithm is written in C and
-  outperforms existing methods by an order of
-  magnitude. \\ \textbf{Results:} Our method is a reformulation of the
-  PCC algorithm so that the lion's share of the computation is done
-  using matrix-matrix products. On a single Intel Xeon Gold 6148 CPU
-  $@$ $2.4$ GHz (Skylake) cpu MPCC achieves 4.3 TFlop/s in single
+  correlations with incomplete data are slow. \\
+\textbf{Results:} Our method is a reformulation of the
+  PCC algorithm where the lion's share of the computation is handled
+  by fast matrix-matrix products. On a single Intel Xeon Gold 6148
+  $@$ $2.4$ GHz (Skylake) CPU MPCC achieves 4.3 TFlop/s in single
   precision (i.e., $77\%$ of the theoretical peak). We show how MPCC
-  outperforms the existing implementation in R up to $120$ times using
-  the multi-core support of OpenBLAS
-  libraries. \\ \textbf{Availability:} Code is available as a C
-  library for R published under a free and open source software GPL-v3
+  outperforms the existing implementation in R by $120$ times. \\
+\textbf{Availability:} Our source code is available as a C
+  library for R published under a free and open source software GPL-v3 (FIXME?)
   licence
-  at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\ \textbf{Contact:} \href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\ \textbf{Supplementary
+  at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
+\textbf{Contact:} \href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\
+\textbf{Supplementary
   information:} Supplementary data are available
   at \textit{Bioinformatics} online.}
 
@@ -70,15 +70,16 @@ addressed.}
 
 \section{Introduction}
 
-The work presented here is motivated by geneNetwork.org, a web service
-for genetics, which routinely performs a matrix of Pearson's
-Correlation Coefficient (PCC) calculations in the presence of missing
-data to find relationships between and among genotypes and phenotypes
-in mouse and rat strains\cite{Sloan2016}. These calculations are a
-bottleneck for moderate to large problem sizes especially when
-accounting for missing data. Calculating PCC is pervasive across
-bioinformatics, data analysis, phylogenetics, statistics, stochastics,
-and anthropology.
+Pearson's correlation is ubiquitous across all fields of biology
+ranging from agriculture to zoology. Large scale computation of
+correlations are found in many areas of biology and bioinformatics.
+For example, genotype correlations are used to construct haplotypes,
+build genetic maps, and order markers within the genome. Pearson's
+correlations are also used in co-expression analysis \citep{Tesson:2010},
+(genome wide) association analysis, reconstruction of genetic
+networks \citep{Fukushima:2013}, weighted correlation network analysis
+(WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL)
+mapping \citep{Arends2016a}.
 
 
 %The mathematical formula for Pearson$'$s correlation were derived by
@@ -88,46 +89,46 @@ and anthropology.
 
 \enlargethispage{12pt}
 
-Pearson$'$s correlation is one of the most used algorithms in
-science. Its use is ubiquitous across all fields of science ranging
-from agriculture to zoology. Large scale computation of correlations
-are found in many areas of biology and bioinformatics.
+The work presented here is motivated by Genenetwork, a service for
+web-based for genetics which routinely performs a matrix of Pearson's
+Correlation Coefficient (PCC) calculations to find relationships
+between and among genotypes and phenotypes in mouse and rat
+strains \citep{Sloan2016}. These calculations are a bottleneck for
+moderate to large problem sizes, especially when accounting for
+missing data.
 
-Genotype correlations are used to construct haplotypes, build genetic
-maps, and order markers within the genome. Furthermore, Pearson$'$s
-correlations are used in co-expression analysis \citep{Tesson:2010},
-(genome wide) association analysis, reconstruction of genetic
-networks \citep{Fukushima:2013}, weighted correlation network analysis
-(WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL)
-mapping \citep{Arends2016a}.
+For example, the BxD family is a panel of 150 recombinant inbred mice
+derived from parents C57BL/6J and DBA/2J, The BxD data collection in
+Genenetwork consists of 7,000 hand curated classical phenotypes,
+high-density genotypes, and over 100 'omics' data
+sets \citep{Ashbrook:2019}.  Consider the case where, for a set of
+individuals, pairwise correlation is computed amongst the set of
+phenotypes for those individuals. Strategy 1 is to remove all
+individuals that contain any missing phenotype data. This is
+undesirable in biological data because often there are no individuals
+without at least some missing data. Strategy 2 handles missing data on
+a case by case basis, which significantly increases the algorithms
+runtime.
 
-The BxD family is a panel of 150 recombinant inbred mice, and the BxD
-data collection consists of 7000 hand curated classical phenotypes,
-high-density genotypes, and over 100 'omics' data sets. All BxD
-phenotype, genotype, and omics data is freely available on
-\href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}.
-GeneNetwork is an online platform for data storage and analysis,
-including Pearson$'$s correlation.
+% All BxD phenotype, genotype, and omics data is freely available on
+% \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}.
+% GeneNetwork is an online platform for data storage and analysis,
+% including Pearson's correlation.
 
-Computation of Pearson$'$s correlations in the R language for
-statistical computing \citep{R:2005} is provided by the $cor()$
-function. It is implemented in C++ and is relatively performant when
-no missing data is present. In the presence of missing data, two
-strategies are used to deal with the missing data.
+The Pearson's correlation in the R language for statistical
+computing \citep{R:2005} is provided by the standard $cor()$
+function. It is implemented as a C function (FIXME? Not FORTRAN?)  and
+is slow when handling missing data.  An additional issue is that
+$cor()$ lacks support for multi-threading. This limitation can be
+worked around by using the $parallel$ library. This library has
+significant overheads and not straightforward to use. (FIXME? Check
+our tests acutually use parallel).
 
-Consider the case where, for a set of individuals, pairwise
-correlation is done amongst the set of phenotypes for those
-individuals. Strategy 1 is to remove all individuals that contain any
-missing phenotype data. This is undesirable in biological data because
-often there are no individuals without at least some missing
-data. Strategy 2 handles missing data on a case by case basis, which
-significantly increases the algorithms runtime.
+% and performs well when no missing data is present. In the
+% case of missing data, however, two strategies are used to deal with the
+% missing data.
 
-An additional issue with the $cor()$ function is the inability to, by
-default, use multi-threading. This limitation can be solved by using
-the $parallel$ library.  However, not every end user has the ability
-to correctly setup the $parallel$ library, and the library uses a new
-R instance for each thread, adding significant computational overhead.
+
 \vspace*{-5mm}
 
 \begin{figure}[!t]
@@ -234,6 +235,9 @@ MKL, as well as the feasibility of a GPU implementation.
 \vspace*{-5mm}
 
 \section{Conclusion}
+
+Calculating PCC is pervasive across bioinformatics, data
+analysis, phylogenetics, statistics, stochastics, and anthropology.
 
 Driven by demands in large data biology, computation of PCC was
 optimized.  MPCC greatly reduces the existing bottlenecks for many
