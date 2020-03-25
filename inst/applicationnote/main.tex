@@ -134,7 +134,7 @@ missing data.
     the amount of missing data, however, reduces speedup
     due to missing data Bit-masking. Multi-threaded performance
     of MPCC compared to the $cor()$ function shows a
-    120$\times$ speedup when 5\% of data is missing.  All
+    120$\times$ speedup when 5\% of data is missing. All
     timings were performed on a system with 28 cores (56 hyper threaded) Intel(R)
     Xeon(R) CPU E5-2683 v3 @ 2.00GHz.
 }
@@ -171,7 +171,7 @@ reduction in runtime compared to the $cor()$ function provided in R.
 Because the latter is not multi-threaded MPCC gains with every core
 added, up to 120$\times$.  In comparison the naive version with OpenMP
 to improve performance in comparison to the $cor()$ function provides
-a consistent 3.5$\times$ speedup (FIXME: how does this relate?)
+a consistent 3.5$\times$ speedup (FIXME: how does this relate? 1 core? Multi-core?)
 
 % \vspace*{-5mm}
 \section{Discussion}
