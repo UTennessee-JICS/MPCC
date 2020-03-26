@@ -1,19 +1,21 @@
-setwd("D:/Ddrive/Github/MPCC/inst/applicationnote/data")
+setwd("D:/Ddrive/Github/MPCC/inst/applicationnote/speedtest")
 mdata <- read.csv("MPCC_SpeedUp.txt", header = TRUE,sep="\t", skip = 2)
 
-plot(c(0, max(mdata[, "n"])), c(0, 80), t = 'n', xlab = 'N', ylab = "Speedup", xaxs = "i", yaxs = "i", main = "Speedup: MPCC() versus cor(), A = 250 x N")
+op <- par(mar = c(5, 4.5, 4, 2) + 0.1)
+
+plot(c(0, max(mdata[, "n"])), c(0, 190), t = 'n', xlab = 'shared dimension (n)', ylab = expression('Speedup '[(latency)]), xaxs = "i", yaxs = "i", 
+     main = "Speedup: MPCC(A, B) versus cor(A, B)", las=2, xaxt='n')
+axis(1, at = c(250,seq(1000,10000, 1000)), c(250,seq(1000,10000, 1000)))
 
 maxm <- max(unique(mdata[,"m"]))
 
 angle = 25
 density = 100
 i <- 1
-for(m in seq(250, 2500, 500)){
+for(m in c(250, 500, 1000, 1500, 2000)){
   min.openblas <- c()
   sd.openblas <- c()
-  min.mkl <- c()
   max.openblas <- c()
-  max.mkl <- c()
 
   inM <- mdata[which(mdata[, "m"] == m),]
   for(n in unique(inM[, "n"])){
@@ -21,26 +23,48 @@ for(m in seq(250, 2500, 500)){
      min.openblas <- c(min.openblas, min(inMN[, "matrix.1"]))
      sd.openblas <- c(sd.openblas, sd(inMN[, "matrix.1"]))
      max.openblas <- c(max.openblas, max(inMN[, "matrix.1"]))
-     min.mkl <- c(min.mkl, min(inMN[, "matrix.3"]))
-     max.mkl <- c(max.mkl, max(inMN[, "matrix.3"]))
   }
   
   mean.openblas <- (min.openblas + max.openblas) / 2.0
-  mean.mkl <- (min.mkl + max.mkl) / 2.0
   
   x <- c(unique(inM[, "n"]), rev(unique(inM[, "n"])))
   #polygon(x, c(max.openblas, rev(min.openblas)),border = "blue", col=rgb(0,0,1,0.5), density = density, angle = angle)
   points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,0,1,1), t = 'l', lwd=i)
   for(x in 1:length(min.openblas)){
-    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(0,0,1,1), t = 'l', lwd=1, lty=3)
+    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(0,0,0,1), t = 'l', lwd=1, lty=3)
   }
-  #points(unique(inM[, "n"]), mean.mkl, col=rgb(1,0,0,0.5), t = 'l', lwd=i)
-  #polygon(x, c(max.mkl, rev(min.mkl)),border = "red", col=rgb(1,0,0,0.5), density = density, angle = angle)
   density <- density - 10
   angle <- angle + 45
   i <- i + 0.5
 }
-legend("topleft", paste0("B = ", seq(250, 2500, 500), " x N"), lwd=seq(1,4,0.5))
+
+for(m in c(3500)){
+  min.openblas <- c()
+  sd.openblas <- c()
+  max.openblas <- c()
+
+  inM <- mdata[which(mdata[, "p"] == m),]
+  for(n in unique(inM[, "n"])){
+     inMN <- inM[which(inM[, "n"] == n),]
+     min.openblas <- c(min.openblas, min(inMN[, "matrix.1"]))
+     sd.openblas <- c(sd.openblas, sd(inMN[, "matrix.1"]))
+     max.openblas <- c(max.openblas, max(inMN[, "matrix.1"]))
+  }
+  
+  mean.openblas <- (min.openblas + max.openblas) / 2.0
+ 
+  x <- c(unique(inM[, "n"]), rev(unique(inM[, "n"])))
+  #polygon(x, c(max.openblas, rev(min.openblas)),border = "blue", col=rgb(0,0,1,0.5), density = density, angle = angle)
+  points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,1,0,1), t = 'l', lwd=2)
+  for(x in 1:length(min.openblas)){
+    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(0,0,0,1), t = 'l', lwd=1, lty=3)
+  }
+  density <- density - 10
+  angle <- angle + 45
+  i <- i + 0.5
+}
+legend("topleft", c(paste0("A=", c(250, 500, 1000, 1500, 2000), "*n, B=250*n"), "A=3500*n, B=3500*n"), lwd=c(seq(1,4,0.5),2), col=c("blue", "blue", "blue", "blue", "blue", "green"))
+
 
 #legend("topleft", c("openBLAS", "MKL"), fill = c(rgb(0,0,1,0.5), rgb(1,0,0,0.5)))
 
