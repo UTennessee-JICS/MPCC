@@ -53,14 +53,15 @@ addressed.}
   relations is a recurring bottleneck. Especially computations of
   correlations with incomplete data are slow. \\
 \textbf{Results:} Our method is a reformulation of the
-  original Pearson's correlation coeffient (PCC) algorithm where the lion's share of the computation is handled
-  by fast matrix-matrix products. On a single Intel Xeon Gold 6148
+  original Pearson's correlation coeffient (PCC) algorithm where 
+  the lion's share of the computation is handled by fast 
+  matrix-matrix products. On a single Intel Xeon Gold 6148
   $@$ $2.4$ GHz (Skylake) CPU MPCC achieves 4.3 TFlop/s in single
   precision (i.e., $77\%$ of the theoretical peak). We show how MPCC
-  outperforms the existing implementation in R by $170$ times. \\
+  outperforms the existing implementation in R by $200$ times. \\
 \textbf{Availability:} Our source code is available as a C
-  library for R published under a free and open source software GPL-v3 (FIXME?)
-  licence
+  library for R published under a dual licence, the free and open 
+  source software GPL-v3 licence as well as the 3-Clause BSD License.
   at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
 \textbf{Contact:} \href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\
 \textbf{Supplementary
@@ -132,10 +133,10 @@ missing data.
     Speed comparison of MPCC versus the native R $cor$ function
     shows increased performance with growing matrix sizes. Increasing
     the amount of missing data (0 to 50\%), increased speedup compared 
-    to the cor() function. Since the missing data Bit-masking is always 
-    performed, while the R cor() function suffers from increased runtime 
+    to the $cor()$ function. Since the missing data Bit-masking is always 
+    performed, while the R $cor()$ function suffers from increased runtime 
     with increasing amount of missing data. Multi-threaded performance 
-    of MPCC compared to the $cor()$ function showed a 170$\times$ speedup. 
+    of MPCC compared to the $cor()$ function showed a 200$\times$ speedup. 
     All timings were performed on a system with 28 cores (56 hyper threaded) Intel(R)
     Xeon(R) CPU E5-2680 v4 @ 2.40GHz.
 }
@@ -170,7 +171,7 @@ also increased step-wise the amount of missing data
 genotype to genotype correlations showed a \textasciitilde{}5 times
 reduction in runtime compared to the $cor()$ function provided in R.
 Because the latter is not multi-threaded MPCC gains with every core
-added, up to 170$\times$.  In comparison the naive version with OpenMP
+added, up to 200$\times$.  In comparison the naive version with OpenMP
 to improve performance in comparison to the $cor()$ function provides
 a consistent 3.5$\times$ speedup (FIXME: how does this relate? 1 core? Multi-core?)
 
