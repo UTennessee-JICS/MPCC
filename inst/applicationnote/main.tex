@@ -133,12 +133,12 @@ missing data.
     Speed comparison of MPCC versus the native R $cor$ function
     shows increased performance with growing matrix sizes. Increasing
     the amount of missing data (0 to 50\%), increased speedup compared 
-    to the $cor()$ function. Since the missing data Bit-masking is always 
-    performed, while the R $cor()$ function suffers from increased runtime 
-    with increasing amount of missing data. Multi-threaded performance 
+    to the $cor()$ function. MPCC always performs missing data Bit-masking, 
+    while the R $cor()$ function suffers from increased runtime with 
+    increasing amount of missing data. Multi-threaded performance 
     of MPCC compared to the $cor()$ function showed a 200$\times$ speedup. 
-    All timings were performed on a system with 28 cores (56 hyper threaded) Intel(R)
-    Xeon(R) CPU E5-2680 v4 @ 2.40GHz.
+    All timings were performed on a system with 28 cores (56 hyper 
+    threaded) Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.
 }
   \label{fig:fig2}
 \end{figure}
