@@ -3,7 +3,7 @@ mdata <- read.csv("MPCC_SpeedUp.txt", header = TRUE,sep="\t", skip = 2)
 
 op <- par(mar = c(5, 4.5, 4, 2) + 0.1)
 
-plot(c(0, max(mdata[, "n"])), c(0, 190), t = 'n', xlab = 'shared dimension (n)', ylab = expression('Speedup '[(latency)]), xaxs = "i", yaxs = "i", 
+plot(c(0, 10050), c(0, 220), t = 'n', xlab = 'shared dimension (n)', ylab = expression('Speedup '[(latency)]), xaxs = "i", yaxs = "i", 
      main = "Speedup: MPCC(A, B) versus cor(A, B)", las=2, xaxt='n')
 axis(1, at = c(250,seq(1000,10000, 1000)), c(250,seq(1000,10000, 1000)))
 
@@ -12,7 +12,7 @@ maxm <- max(unique(mdata[,"m"]))
 angle = 25
 density = 100
 i <- 1
-for(m in c(250, 500, 1000, 1500, 2000)){
+for(m in c(250, 500, 1000, 1500, 2500)){
   min.openblas <- c()
   sd.openblas <- c()
   max.openblas <- c()
@@ -29,16 +29,21 @@ for(m in c(250, 500, 1000, 1500, 2000)){
   
   x <- c(unique(inM[, "n"]), rev(unique(inM[, "n"])))
   #polygon(x, c(max.openblas, rev(min.openblas)),border = "blue", col=rgb(0,0,1,0.5), density = density, angle = angle)
-  points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,0,1,1), t = 'l', lwd=i)
+  if(i == 1){
+    points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,1,0,1), t = 'l', lwd=i)
+  }else{
+    points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,0,1,1), t = 'l', lwd=i)
+  }
   for(x in 1:length(min.openblas)){
-    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(0,0,0,1), t = 'l', lwd=1, lty=3)
+    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(i/5,i/5,i/5,1), t = 'l', lwd=1, lty=3)
   }
   density <- density - 10
   angle <- angle + 45
   i <- i + 0.5
 }
 
-for(m in c(3500)){
+i <- 1.5
+for(m in c(2000, 3500)){
   min.openblas <- c()
   sd.openblas <- c()
   max.openblas <- c()
@@ -55,15 +60,15 @@ for(m in c(3500)){
  
   x <- c(unique(inM[, "n"]), rev(unique(inM[, "n"])))
   #polygon(x, c(max.openblas, rev(min.openblas)),border = "blue", col=rgb(0,0,1,0.5), density = density, angle = angle)
-  points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,1,0,1), t = 'l', lwd=2)
+  points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,1,0,1), t = 'l', lwd=i)
   for(x in 1:length(min.openblas)){
-    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(0,0,0,1), t = 'l', lwd=1, lty=3)
+    points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(i/3,i/3,i/3,1), t = 'l', lwd=1, lty=3)
   }
   density <- density - 10
   angle <- angle + 45
   i <- i + 0.5
 }
-legend("topleft", c(paste0("A=", c(250, 500, 1000, 1500, 2000), "*n, B=250*n"), "A=3500*n, B=3500*n"), lwd=c(seq(1,4,0.5),2), col=c("blue", "blue", "blue", "blue", "blue", "green"))
+legend("topleft", c(paste0("A=", c(500, 1000, 1500, 2500), "*n, B=250*n"), "A=250*n, B=250*n", "A=2000*n, B=2000*n", "A=3500*n, B=3500*n"), lwd=c(seq(1,2.5,0.5), 1, 1.5, 2), col=c("blue", "blue", "blue", "blue", "green", "green", "green"))
 
 
 #legend("topleft", c("openBLAS", "MKL"), fill = c(rgb(0,0,1,0.5), rgb(1,0,0,0.5)))

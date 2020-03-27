@@ -16,8 +16,8 @@ if(file.exists("timings.txt")){
 
 nSeq <- c(250, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10000)
 
-for(p in seq(3500, 3500, 250)){
-  for(m in seq(3500, 3500, 250)){
+for(p in seq(2000, 2000, 250)){
+  for(m in seq(2000, 2000, 250)){
     for(n in nSeq){
       for(nM in seq(0.0, 0.5, 0.1)){
         ii <- which(results[,"p"] == p & results[,"m"] == m & results[,"n"] == n & results[,"missing"] == as.numeric(round(nM,1)))
@@ -30,8 +30,8 @@ for(p in seq(3500, 3500, 250)){
         time.matrix <- c()
 
         nreps <- 5
-        if(m > 1500) nreps <- 1  # Reduce the number of reps for large matrices
-        if(p > 1500) nreps <- 1  # Reduce the number of reps for large matrices
+        if(m > 1500) nreps <- 3  # Reduce the number of reps for large matrices
+        if(p > 1500) nreps <- 3  # Reduce the number of reps for large matrices
         
         for (x in 1:nreps) {
           matrices <- genAB(p, n, m)
