@@ -105,14 +105,13 @@ set of phenotypes: the BxD family is a panel of 150 recombinant inbred
 mice derived from parents C57BL/6J and DBA/2J. The BxD data collection
 in Genenetwork consists of high-density genotypes with 7,000 classical
 phenotypes and data sets containing 100,000+ gene expression
-phenotypes \citep{Ashbrook:2019}.  All phenotype columns miss data and
-with the default $cor()$ implementation of Pearson's correlation in
-the R language for statistical computing \citep{R:2005} the function
-is slow when handling missing data. It also lacks support for
-multi-threading. With MPCC we implemented a full matrix method which
-is a drop-in replacement for $cor()$, is multi-threaded and can handle
-missing data.
-
+phenotypes \citep{Ashbrook:2019}.  All phenotypes contain missing data 
+and the default $cor()$ implementation of Pearson's correlation in
+the R language for statistical computing \citep{R:2005} is slow when 
+handling missing data. It also lacks  multi-threading support. With 
+MPCC we implemented novel matrix based approach which is a drop-in 
+replacement for $cor()$, is multi-threaded and can handle missing data 
+without performance loss.
 
 % All BxD phenotype, genotype, and omics data is freely available on
 % \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}.
