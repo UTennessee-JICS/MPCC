@@ -173,7 +173,10 @@ reduction in runtime compared to the $cor()$ function provided in R.
 Because the latter is not multi-threaded MPCC gains with every core
 added, up to 200$\times$.  In comparison the naive version with OpenMP
 to improve performance in comparison to the $cor()$ function provides
-a consistent 3.5$\times$ speedup (FIXME: how does this relate? 1 core? Multi-core?)
+a consistent 3.5$\times$ speedup. This showed that the matrix---matrix 
+multiplication implementation was responsible for the lion's share of 
+performance gains, while the naive multi-threading support only marginaly 
+improved performance.
 
 % \vspace*{-5mm}
 \section{Discussion}
