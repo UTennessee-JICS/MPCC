@@ -143,7 +143,7 @@ missing data.
   \label{fig:fig2}
 \end{figure}
 
-\vspace*{-5mm}
+\vspace*{-10mm}
 
 \section{Approach}
 
@@ -158,7 +158,8 @@ The MPCC matrix version reformulates the original algorithm into a
 series of matrix---matrix products and element-wise matrix
 operations. MPCC handles missing data is by using a novel bit-masking
 approach that leverages existing matrix---matrix multiplication
-implementations from, for example, OpenBLAS (see supplement).
+implementations from, for example, OpenBLAS (Supplement 1 - 'Missing 
+Data Bit-masking').
 
 To benchmark MPCC for different matrix sizes we computed pairwise
 correlation between genotypes of the BxD family.  Genotype data in the
@@ -166,19 +167,19 @@ BxD family is almost complete with only a few heterozygous or
 `missing' loci remaining, i.e., this scenario benchmarks MPCC versus
 $cor()$ when a small amount of data is missing.  Next we computed the
 speed improvement of MPCC versus R's $cor()$ for these matrices. We
-also increased step-wise the amount of missing data
-(Figure \ref{fig:fig2}). Using MPCC on a single core to compute
-genotype to genotype correlations showed a \textasciitilde{}5 times
-reduction in runtime compared to the $cor()$ function provided in R.
-Because the latter is not multi-threaded MPCC gains with every core
-added, up to 200$\times$.  In comparison the naive version with OpenMP
-to improve performance in comparison to the $cor()$ function provides
-a consistent 3.5$\times$ speedup. This showed that the matrix---matrix 
+also increased step-wise the amount of missing data. Using MPCC on a 
+single core to compute genotype to genotype correlations showed a 
+\textasciitilde{}5 times reduction in runtime compared to the $cor()$ 
+function provided in R. Because the latter is not multi-threaded MPCC 
+gains with every core added, up to 200$\times$ (Figure \ref{fig:fig2}).  
+The naive version with OpenMP to improve performance in comparison to 
+the $cor()$ function provides a consistent 3.5$\times$ speedup 
+(Supplement 2 - 'Benchmark data'). This showed that the matrix---matrix 
 multiplication implementation was responsible for the lion's share of 
-performance gains, while the naive multi-threading support only marginaly 
-improved performance.
+performance gains, while the naive multi-threading support added to the 
+$cor()$ function only marginaly improved performance.
 
-% \vspace*{-5mm}
+\vspace*{2mm}
 \section{Discussion}
 
 Both the naive and Matrix versions provide R interfaces that act as
@@ -201,8 +202,7 @@ We thank the support of Xsede/NSF startup MCB190140, the UT Center for
 Integrative and Translational Genomics, and funds from the UT-ORNL
 Governor's Chair, NIGMS Systems Genetics and Precision Medicine
 Project R01 GM123489, NIDA grant P30 DA044223, NIAAA U01 AA013499 and
-U01 AA016662.
-
+U01 AA016662.\\
 \textit{Conflict of Interest:} none declared.
 
 \vspace*{-5mm}
