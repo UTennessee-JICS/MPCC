@@ -13,7 +13,7 @@
 
 \subtitle{Genetic and population analysis}
 
-\title[MPCC]{A Performant Matrix of Pearson$'$s Correlation Coefficient (MPCC) Calculations}
+\title[MPCC]{High Performance Matrix of Pearson$'$s Correlation Coefficient (MPCC) Calculations}
 \author[Arends \textit{et~al}.]{
 Danny Arends\,$^{\text{\sfb 1, $\dagger$}}$,
 Mitch Horton\,$^{\text{\sfb 2, $\dagger$}}$,
@@ -41,26 +41,24 @@ addressed.}
 
 \editor{Associate Editor: XXXXXXX}
 
-\abstract{ \textbf{Motivation:}  We present a novel
-  high performance and robust matrix-based Pearson correlation
-  coefficent (MPCC) algorithm that handles missing data and makes
-  effective use of modern CPU Advanced Vector Extensions (AVX)
-  extensions. Computation of correlations has
-  common use in biomedical applications and research. With the rapidly
+\abstract{ \textbf{Motivation:} With the rapidly
   growing amount of data acquired from sequencing, combined with
   growing body of phenotype data from medical and experimental
-  biology, we find that computing correlations in networks of
-  relations is a recurring bottleneck. Especially computations of
-  correlations with incomplete data are slow. \\
+  biology, computing correlations is a recurring
+  bottleneck. Especially computating correlations on incomplete data
+  are slow.  Here we present a novel high performance and robust
+  matrix-based Pearson correlation coefficent (MPCC) algorithm that
+  handles missing data and makes effective use of modern CPU Advanced
+  Vector Extensions (AVX) extensions. \\
 \textbf{Results:} Our method is a reformulation of the
-  original Pearson's correlation coeffient (PCC) algorithm where 
-  the lion's share of the computation is handled by fast 
+  original Pearson's correlation coeffient (PCC) algorithm where
+  the lion's share of the computation is handled by fast
   matrix-matrix products. On a single Intel Xeon Gold 6148
   $@$ $2.4$ GHz (Skylake) CPU MPCC achieves 4.3 TFlop/s in single
   precision (i.e., $77\%$ of the theoretical peak). We show how MPCC
   outperforms the existing implementation in R by $200$ times. \\
 \textbf{Availability:} Our source code is available as a C
-  library for R published under a dual licence, the free and open 
+  library for R published under a dual licence, the free and open
   source software GPL-v3 licence as well as the 3-Clause BSD License.
   at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
 \textbf{Contact:} \href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\
@@ -100,29 +98,21 @@ relationships between and among genotypes and phenotypes in mouse and
 rat strains. These calculations are a bottleneck for moderate to large
 problem sizes, especially when accounting for missing data.
 
-Consider the case where pairwise correlation is computed within the
-set of phenotypes: the BxD family is a panel of 150 recombinant inbred
-mice derived from parents C57BL/6J and DBA/2J. The BxD data collection
-in Genenetwork consists of high-density genotypes with 7,000 classical
-phenotypes and data sets containing 100,000+ gene expression
-phenotypes \citep{Ashbrook:2019}.  All phenotypes contain missing data 
-and the default $cor()$ implementation of Pearson's correlation in
-the R language for statistical computing \citep{R:2005} is slow when 
-handling missing data. It also lacks  multi-threading support. With 
-MPCC we implemented novel matrix based approach which is a drop-in 
-replacement for $cor()$, is multi-threaded and can handle missing data 
-without performance loss.
+Statistics are often computed in the R language for statistical
+computing\citep{R:2005}. R's default $cor()$ implementation of
+Pearson's correlation is pairwise and written in C.
 
-% All BxD phenotype, genotype, and omics data is freely available on
-% \href{https://genenetwork.org/}{GeneNetwork.org} \citep{Sloan2016}.
-% GeneNetwork is an online platform for data storage and analysis,
-% including Pearson's correlation.
-% and performs well when no missing data is present. In the
-% case of missing data, however, two strategies are used to deal with the
-% missing data.
-
-
-% \vspace*{-5mm}
+Consider the case where correlation is computed within a set of
+phenotypes. The BxD family is a panel of 150 recombinant inbred mice
+derived from parents C57BL/6J and DBA/2J \citep{Ashbrook:2019}. The
+BxD data collection in Genenetwork consists of high-density genotypes
+with 7,000 classical phenotypes and data sets containing 100,000+ gene
+expression phenotypes.  Most studies use a subset of these 150 mice,
+therefore a matrix-style correlation computation based on removing
+rows with missing phenotypes would end up being empty.  With MPCC we
+implemented a novel matrix based approach, that is a drop-in
+replacement for $cor()$ and can handle missing data without
+performance loss.
 
 \begin{figure}[H]
 \centering
@@ -131,12 +121,12 @@ without performance loss.
   \small
     Speed comparison of MPCC versus the native R $cor$ function
     shows increased performance with growing matrix sizes. Increasing
-    the amount of missing data (0 to 50\%), increased speedup compared 
-    to the $cor()$ function. MPCC always performs missing data Bit-masking, 
-    while the R $cor()$ function suffers from increased runtime with 
-    increasing amount of missing data. Multi-threaded performance 
-    of MPCC compared to the $cor()$ function showed a 200$\times$ speedup. 
-    All timings were performed on a system with 28 cores (56 hyper 
+    the amount of missing data (0 to 50\%), increased speedup compared
+    to the $cor()$ function. MPCC always performs missing data Bit-masking,
+    while the R $cor()$ function suffers from increased runtime with
+    increasing amount of missing data. Multi-threaded performance
+    of MPCC compared to the $cor()$ function showed a 200$\times$ speedup.
+    All timings were performed on a system with 28 cores (56 hyper
     threaded) Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.
 }
   \label{fig:fig2}
@@ -146,19 +136,20 @@ without performance loss.
 
 \section{Approach}
 
-First we wrote a `naive' correlation function that is algorithmically
-identical to the R $cor()$ function (see supplement). Multi-threading
-support was added with little additional overhead by introducing
-OpenMP. This naive version provided a multi-threaded baseline against
-the full MPCC matrix version.  MPCC is a novel matrix implementation
-of Pearson's correlation that makes use of hardware Advanced Vector
-Extensions (AVX) instructions that were introduced by Intel in 2011.
-The MPCC matrix version reformulates the original algorithm into a
-series of matrix---matrix products and element-wise matrix
-operations. MPCC handles missing data by using a novel bit-masking
-approach that leverages existing matrix---matrix multiplication
-implementations from, for example, OpenBLAS (Supplement 1 - 'Missing 
-Data Bit-masking').
+We started by writing a `naive' version that is algorithmically
+identical to the R $cor()$ function (see supplement). Next, we added
+multi-threading by introducing OpenMP. This provided some speedup,
+typically in the order of $3\times$ the single core version.  Next we
+wrote MPCC, a matrix implementation of Pearson's correlation that
+makes use of hardware Advanced Vector Extensions (AVX) instructions
+introduced by Intel in 2011. This sped up compuations up to
+$200\times$ on a 28-core machine (Figure~\ref{fig:fig2}).  The MPCC
+matrix version reformulates the original algorithm into a series of
+matrix---matrix products and element-wise matrix operations. MPCC
+handles missing data by using a novel bit-masking approach that
+leverages existing matrix---matrix multiplication implementations
+from, for example, OpenBLAS (Supplement 1 - 'Missing Data
+Bit-masking').
 
 To benchmark MPCC for different matrix sizes we computed pairwise
 correlation between genotypes of the BxD family.  Genotype data in the
@@ -166,20 +157,23 @@ BxD family is almost complete with only a few heterozygous or
 `missing' loci remaining, i.e., this scenario benchmarks MPCC versus
 $cor()$ when a small amount of data is missing.  Next we computed the
 speed improvement of MPCC versus R's $cor()$ for these matrices. We
-also increased step-wise the amount of missing data. Using MPCC on a 
-single core to compute genotype to genotype correlations showed a 
-\textasciitilde{}5 times reduction in runtime compared to the $cor()$ 
-function provided in R. Because the latter is not multi-threaded MPCC 
-gains with every core added, up to 200$\times$ (Figure \ref{fig:fig2}).  
-The naive version with OpenMP to improve performance in comparison to 
-the $cor()$ function provides a consistent 3.5$\times$ speedup 
-(Supplement 2 - 'Benchmark data'). This showed that the matrix---matrix 
-multiplication implementation was responsible for the lion's share of 
-performance gains, while the naive multi-threading support added to the 
+also increased step-wise the amount of missing data. Using MPCC on a
+single core to compute genotype to genotype correlations showed a
+\textasciitilde{}$5\times$ reduction in runtime compared to the $cor()$
+function provided in R. Because the latter is not multi-threaded MPCC
+gains with every core added, up to $200\times$ (Figure \ref{fig:fig2}).
+The naive version with OpenMP to improve performance in comparison to
+the $cor()$ function provides a consistent 3.5$\times$ speedup
+(Supplement 2 - 'Benchmark data'). This showed that the matrix---matrix
+multiplication implementation was responsible for the lion's share of
+performance gains, while the naive multi-threading support added to the
 $cor()$ function only marginaly improved performance.
 
 \vspace*{2mm}
 \section{Discussion}
+
+$cor()$ is slow when handling
+missing data. $cor()$ also lacks multi-threading support.
 
 Both the naive and Matrix versions provide R interfaces that act as
 drop-in replacement for R's $cor()$ function.  MPCC leverages the
