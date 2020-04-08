@@ -60,7 +60,7 @@ addressed.}
 \textbf{Availability:} Our source code is available as a C
   library for R published under a dual licence, the free and open
   source software GPL-v3 licence as well as the 3-Clause BSD License.
-  at \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
+  Source code is available at: \href{https://github.com/UTennessee-JICS/MPCC}{https://github.com/UTennessee-JICS/MPCC}\\
 \textbf{Contact:} \href{glenn-brook@tennessee.edu}{glenn-brook@tennessee.edu}\\
 \textbf{Supplementary
   information:} Supplementary data are available
@@ -99,15 +99,15 @@ rat strains. These calculations are a bottleneck for moderate to large
 problem sizes, especially when accounting for missing data.
 
 Statistics are often computed in the R language for statistical
-computing\citep{R:2005}. R's default $cor()$ implementation of
+computing \citep{R:2005}. R's default $cor()$ implementation of
 Pearson's correlation is pairwise and written in C.
 
 Consider the case where correlation is computed within a set of
 phenotypes. The BxD family is a panel of 150 recombinant inbred mice
 derived from parents C57BL/6J and DBA/2J \citep{Ashbrook:2019}. The
 BxD data collection in Genenetwork consists of high-density genotypes
-with 7,000 classical phenotypes and data sets containing 100,000+ gene
-expression phenotypes.  Most studies use a subset of these 150 mice,
+with 7,000 classical phenotypes and several data sets containing 100,000+ gene
+expression phenotypes.  Most studies use only a subset of these 150 mice,
 therefore a matrix-style correlation computation based on removing
 rows with missing phenotypes would end up being empty.  With MPCC we
 implemented a novel matrix based approach, that is a drop-in
@@ -121,7 +121,8 @@ performance loss.
   \small
     Speed comparison of MPCC versus the native R $cor$ function
     shows increased performance with growing matrix sizes. Increasing
-    the amount of missing data (0 to 50\%), increased speedup compared
+    the amount of missing data (0 to 50\%) was visualized using error bars. 
+    Increasing amounts of missing data increased speedup compared
     to the $cor()$ function. MPCC always performs missing data Bit-masking,
     while the R $cor()$ function suffers from increased runtime with
     increasing amount of missing data. Multi-threaded performance
@@ -139,15 +140,15 @@ performance loss.
 We started by writing a `naive' version that is algorithmically
 identical to the R $cor()$ function (see supplement). Next, we added
 multi-threading by introducing OpenMP. This provided some speedup,
-typically in the order of $3\times$ the single core version.  Next we
+typically in the order of 3.5$\times$ comapred to the single core version.  Next we
 wrote MPCC, a matrix implementation of Pearson's correlation that
 makes use of hardware Advanced Vector Extensions (AVX) instructions
-introduced by Intel in 2011. This sped up compuations up to
+introduced by Intel in 2011. This sped up computations up to
 $200\times$ on a 28-core machine (Figure~\ref{fig:fig2}).  The MPCC
 matrix version reformulates the original algorithm into a series of
-matrix---matrix products and element-wise matrix operations. MPCC
+matrix-matrix products and element-wise matrix operations. MPCC
 handles missing data by using a novel bit-masking approach that
-leverages existing matrix---matrix multiplication implementations
+leverages existing matrix-matrix multiplication implementations
 from, for example, OpenBLAS (Supplement 1 - 'Missing Data
 Bit-masking').
 
@@ -164,7 +165,7 @@ function provided in R. Because the latter is not multi-threaded MPCC
 gains with every core added, up to $200\times$ (Figure \ref{fig:fig2}).
 The naive version with OpenMP to improve performance in comparison to
 the $cor()$ function provides a consistent 3.5$\times$ speedup
-(Supplement 2 - 'Benchmark data'). This showed that the matrix---matrix
+(Supplement 2 - 'Benchmark data'). This showed that the matrix-matrix
 multiplication implementation was responsible for the lion's share of
 performance gains, while the naive multi-threading support added to the
 $cor()$ function only marginaly improved performance.
@@ -172,8 +173,8 @@ $cor()$ function only marginaly improved performance.
 \vspace*{2mm}
 \section{Discussion}
 
-$cor()$ is slow when handling
-missing data. $cor()$ also lacks multi-threading support.
+The R $cor()$ function is slow when handling missing data, and 
+also lacks multi-threading support.
 
 Both the naive and Matrix versions provide R interfaces that act as
 drop-in replacement for R's $cor()$ function.  MPCC leverages the
@@ -181,13 +182,14 @@ optimized speed of OpenBLAS or, alternatively, Intel\textregistered{}
 MKL, to obtain maximum performance on systems that support the
 AVX instruction sets.  The missing data
 approach (Supplement 1 - 'Missing Data Bit-masking') can be trivially
-generalized to other algorithms which rely on matrix---matrix
+generalized to other algorithms which rely on matrix-matrix
 multiplication and may also be suitable for GPU computing.
 
-While our work presents a reference implementation in R it is not
-limited to the R programming language. MPCC is written in C and can
-therefore be called from any other computer language using a foreign
-function interface.
+MPCC is written in C$++$, and provides a C foreign function interface. 
+The algorithm can therefore be called from any other computer language 
+using a foreign function interface. Our work presents such a binding 
+in the R programming language, providing other researchers with 
+an example on how-to call the MPCC algorithm from other programming languages.
 
 \section*{Funding}
 
