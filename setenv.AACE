@@ -1,0 +1,28 @@
+#
+
+# if compiling using gnu
+#export MKLROOT=/opt/intel/compilers_and_libraries/mac/mkl
+#export DYLD_LIBRARY_PATH=${MKLROOT}
+#export COMPILERVARS_ARCHITECTURE=intel64
+
+#export INCLUDE=$INCLUDE:${MKLROOT}
+#source /opt/intel/compilers_and_libraries/mac/mkl/bin/mklvars.sh intel64
+
+#source /opt/intel/compilers_and_libraries_2019.0.117/mac/bin/compilervars.sh intel64 
+#
+#module swap intel-compilers intel-compilers/latest
+
+export MKL_ENABLE_INSTRUCTIONS=AVX512
+module load r/3.6.1
+export CPATH=$CPATH:/sw/cs400_centos7.3_acfsoftware/r/3.6.1/centos7.3_gnu6.3.0/R-3.6.1/include/
+export INCLUDE=$INCLUDE:/sw/cs400_centos7.3_acfsoftware/r/3.6.1/centos7.3_gnu6.3.0/R-3.6.1/include/
+#export CPATH=$CPATH:/sw/cs400_centos7.3_acfsoftware/r/3.4.0/centos7.3_intel17.2.174/R-3.4.0/include/
+#export INCLUDE=$INCLUDE:/sw/cs400_centos7.3_acfsoftware/r/3.4.0/centos7.3_intel17.2.174/R-3.4.0/include/
+
+#make BUILD="-DSTANDALONE=1 -DMKL=1" for standalone code
+#
+#for standalone gpu code
+#module swap PE-intel PE-gnu
+#module load cuda/10.0
+#make -f Makefile.cublas BUILD="-DSTANDALONE=1 -DCUBLAS=1" for standalone gpu code
+#srun --ntasks=1 --cpus-per-task=80 --gres=gpu:2 --pty /bin/bash -i
