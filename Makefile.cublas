@@ -5,7 +5,7 @@
 CXX		= ${CC}
 NVCC		= nvcc
 #INCLUDES	= -I${MKLROOT}/include ${OPENBLAS_INC} -I${CUDA_DIR}/include -I./src
-INCLUDES	= -I${CUDA_DIR}/include -I./src
+INCLUDES	= -I${CUDA_DIR}/include -I${CUDA_DIR}/samples/common/inc -I./src
 
 CXXFLAGS+=$(BUILD)
 CXXFLAGS+=$(INCLUDES)
@@ -13,7 +13,7 @@ CXXFLAGS+=$(INCLUDES)
 CXXFLAGS+= -std=c++11 -g -O3 -m64 
 
 NVCCFLAGS+=$(BUILD)
-NVCCFLAGS+=-I./src -I${CUDA_DIR}/include
+NVCCFLAGS+=-I./src -I${CUDA_DIR}/include -I${CUDA_DIR}/samples/common/inc
 CUDALIB		= -L${CUDA_DIR}/lib64/stubs
 
 SRCDIRS = ./src

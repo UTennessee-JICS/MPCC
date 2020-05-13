@@ -11,7 +11,7 @@
 // ./MPCC MatA_filename MatB_filename 
 
 #include "MPCC.h"
-
+#include <sys/time.h>
 #include <cublas.h>//ceb
 
 using namespace std;
@@ -85,7 +85,7 @@ using namespace std;
 // vMul function when input matrix A == B
 void vMulSameAB(int m, int p, DataType* in1, DataType* in2, DataType* out){
   int i, j;
-  //#pragma omp parallel for private(i, j)
+  #pragma omp parallel for private(i, j)
   for(i = 0; i < m; i++) {
     for(j = 0; j < p; j++) {
       out[i*m + j] = in1[i*m + j] * in2[j*m + i];
@@ -129,7 +129,6 @@ void initialize(int &m, int &n, int &p, int seed,
   //if matA_filename exists, read in dimensions
   // check for input file(s)
   std::string text;
-  //DataType val;
   fstream mat_A_file;
 
   mat_A_file.open(matA_filename,ios::in);
@@ -199,7 +198,6 @@ void initialize(int &m, int &n, int &p, int seed,
   __assume_aligned(A, 64);
   __assume_aligned(B, 64);
   __assume_aligned(C, 64);
-  //__assume(m%16==0);
  
   //setup random numbers to create some synthetic matrices for correlation
   // if input files do not exist
@@ -288,10 +286,6 @@ void initialize(int &m, int &n, int &p, int seed,
     for(int i=0; i<n*p; ++i) mat_B_file << (*B)[i];
     mat_B_file.close();
   }
-#if 0
-  for (int i=0; i<m; i++) { for(int j=0;j<n;++j){printf("A[%d,%d]=%e\n",i,j,(*A)[i*n+j]);}}
-  for (int i=0; i<n; i++) { for(int j=0;j<p;++j){printf("B[%d,%d]=%e\n",i,j,(*B)[i*p+j]);}}
-#endif
   return;
 };
 
@@ -302,15 +296,19 @@ void initialize(int &m, int &n, int &p, int seed,
 //This function is the implementation of a matrix x matrix algorithm which computes a matrix of PCC values
 //but increases the arithmetic intensity of the naive pairwise vector x vector correlation
 //A is matrix of X vectors and B is transposed matrix of Y vectors:
-//P = [ sum(AB) - (sumA)(sumB)/N ] /
-//    sqrt([ (sumA^2 -(1/N)(sum A)^2) ][ (sumB^2 - (1/N)(sum B)^2) ])
-//
 //P = [ N*sum(AB) - (sumA)(sumB)] /
 //    sqrt([ (N*sumA^2 - (sum A)^2) ][ (N*sumB^2 - (sum B)^2) ])
   #ifndef CUBLAS
 int pcc_matrix(int m, int n, int p,
                DataType* A, DataType* B, DataType* P)
 {
+
+  //omp_set_num_threads(40);
+  printf("omp_get_num_threads()=%d\n",omp_get_num_threads());
+#ifdef MKL
+  printf("mkl_get_max_threads()=%d\n",mkl_get_max_threads());
+#endif
+
   // Unused variable warning: int stride = ((n-1)/64 +1);
   int i,j,k;
   DataType alpha = 1.0;
@@ -321,7 +319,6 @@ int pcc_matrix(int m, int n, int p,
 
 
   if(p == 0)  p = m;
-  //info("before calloc\n",1);
   //allocate and initialize and align memory needed to compute PCC
   DataType *N = (DataType *) ALLOCATOR( m*p,sizeof( DataType ), 64 );
   __assume_aligned(N, 64);
@@ -347,8 +344,6 @@ int pcc_matrix(int m, int n, int p,
   __assume_aligned(amask, 64);
   DataType *bmask= sameAB ? amask : (DataType*)ALLOCATOR( n*p, sizeof(DataType), 64);
   __assume_aligned(bmask, 64);
-
-  //info("after calloc\n",1);
 
   //if any of the above allocations failed, then we have run out of RAM on the node and we need to abort
   if ( (N == NULL) | (SA == NULL) | (AA == NULL) | (SAA == NULL) | (SB == NULL) | (BB == NULL) | 
@@ -411,63 +406,41 @@ int pcc_matrix(int m, int n, int p,
     GEMM(LEAD_PARAM, NOTRANS, TRANS,
          m, p, n, alpha, amask, n, bmask, n, beta, N, p);
 
-    //vsSqr(m*n,A,AA);
     VSQR(m*n,A,AA);
-
-    //vsSqr(n*p,B,BB);
     if (!sameAB) { VSQR(n*p,B,BB); } // Only perform VSQR when A and B are not same
 
-    //variables used for performance timing
-    //struct timespec startGEMM, stopGEMM;
-    //double accumGEMM;
-
-    //info("before PCC terms\n",1);
-
     //Compute PCC terms and assemble
-    //CBLAS_TRANSPOSE transB=CblasNoTrans;
-    int ldb=p;
-    if(transposeB){
-      //transB=TRANS;
-      ldb=n;
-    }
-
-    //clock_gettime(CLOCK_MONOTONIC, &startGEMM);
     
     //SA = A*UnitB
     //Compute sum of A for each AB row col pair.
     // This requires multiplication with a UnitB matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(LEAD_PARAM, NOTRANS, TRANS,
-         m, p, n, alpha, A, n, UnitB, ldb, beta, SA, p); 
+         m, p, n, alpha, A, n, UnitB, n, beta, SA, p); 
 
     //SB = UnitA*B
     //Compute sum of B for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     if (!sameAB) { //only do it when A and B are not same
       GEMM(LEAD_PARAM, NOTRANS, TRANS,
-         m, p, n, alpha, UnitA, n, B, ldb, beta, SB, p);
+         m, p, n, alpha, UnitA, n, B, n, beta, SB, p);
     }
-
 
     //SAA = AA*UnitB
     //Compute sum of AA for each AB row col pair.
     // This requires multiplication with a UnitB matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(LEAD_PARAM, NOTRANS, TRANS,
-         m, p, n, alpha, AA, n, UnitB, ldb, beta, SAA, p); 
+         m, p, n, alpha, AA, n, UnitB, n, beta, SAA, p); 
 
     //SBB = UnitA*BB
     //Compute sum of BB for each AB row col pair.
     // This requires multiplication with a UnitA matrix which acts as a mask 
     // to prevent missing data in AB pairs from contributing to the sum
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     if (!sameAB) { //only do it when A and B are not same
       GEMM(LEAD_PARAM, NOTRANS, TRANS,
-         m, p, n, alpha, UnitA, n, BB, ldb, beta, SBB, p); 
+         m, p, n, alpha, UnitA, n, BB, n, beta, SBB, p); 
     }
 
     FREE(UnitA);
@@ -478,13 +451,8 @@ int pcc_matrix(int m, int n, int p,
     }
 
     //SAB = A*B
-    //cblas_sgemm(CblasRowMajor, CblasNoTrans, transB,
     GEMM(LEAD_PARAM, NOTRANS, TRANS,
-         m, p, n, alpha, A, n, B, ldb, beta, SAB, p); 
-
-    //clock_gettime(CLOCK_MONOTONIC, &stopGEMM);
-    //accumGEMM =  (TimeSpecToSeconds(&stopGEMM)- TimeSpecToSeconds(&startGEMM));
-    //printf("All(5) GEMMs (%e)s GFLOPs=%e \n", accumGEMM, 5*(2/1.0e9)*m*n*p/accumGEMM);
+         m, p, n, alpha, A, n, B, n, beta, SAB, p); 
 
     DataType* SASB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 );
     DataType* NSAB = ( DataType*)ALLOCATOR( m*p,sizeof(DataType), 64 ); //ceb
@@ -505,10 +473,11 @@ int pcc_matrix(int m, int n, int p,
     } else {
       vMulSameAB(m,p,SA,SB,SASB);
     }
+
     //NSAB=N*SAB
     VMUL(m*p,N,SAB,NSAB); //ceb
 
-    //NSAB=(-1)NSAB+SASB  (numerator)
+    //NSAB=NSAB-SASB  (numerator)
     AXPY(m*p,(DataType)(-1), SASB,1, NSAB,1); //ceb
 
     //(SA)^2
@@ -529,12 +498,14 @@ int pcc_matrix(int m, int n, int p,
         }
       }
     }
+
     //N(SBB)
     if (!sameAB) {
       VMUL(m*p,N,SBB,NSBB);
     } else {
       vMulSameAB(m, p, N, SBB, NSBB);
     }
+
     //NSBB=NSBB-SBSB (denominatr term 2)
     AXPY(m*p,(DataType)(-1), SBSB,1, NSBB,1);
 
@@ -544,8 +515,10 @@ int pcc_matrix(int m, int n, int p,
     for (int i = 0;i < m*p;++i) {
        if(DENOM[i]==0.){DENOM[i]=1;}//numerator will be 0 so to prevent inf, set denom to 1
     }
+
     //sqrt(DENOM)
     VSQRT(m*p,DENOM,DENOMSqrt);
+
     //P=NSAB/DENOMSqrt (element wise division)
     VDIV(m*p,NSAB,DENOMSqrt,P);   
 
@@ -595,7 +568,7 @@ int main (int argc, char **argv) {
   if(argc>1){ matA_filename = argv[1]; }
   if(argc>2){ matB_filename = argv[2]; }
   
-  struct timespec startPCC,stopPCC;
+  struct timeval startPCC, stopPCC, runtimePCC;
   // A is n x p (tall and skinny) row major order
   // B is p x m (short and fat) row major order
   // R is n x m (big and square) row major order
@@ -604,12 +577,12 @@ int main (int argc, char **argv) {
   DataType* R;
   DataType* diff;
   DataType* C;
-  DataType accumR;
    
   bool transposeB=false;
   initialize(m, n, p, seed, &A, &B, &R, matA_filename, matB_filename, transposeB);
   //C = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
-  clock_gettime(CLOCK_MONOTONIC, &startPCC);
+  //clock_gettime(CLOCK_MONOTONIC, &startPCC);
+  gettimeofday(&startPCC,NULL);
   #if NAIVE
   printf("naive PCC implmentation\n");
   pcc_naive(m, n, p, A, B, R);
@@ -617,10 +590,11 @@ int main (int argc, char **argv) {
   printf("matrix PCC implmentation\n");
   pcc_matrix(m, n, p, A, B, R);
   #endif
-  clock_gettime(CLOCK_MONOTONIC, &stopPCC);
-  accumR =  (TimeSpecToSeconds(&stopPCC)- TimeSpecToSeconds(&startPCC));
-
-
+  //printf("R= "); for(int i=0; i<m*p;++i){printf("%e ",R[i]);}printf("\n");
+  //printf("R= "); for(int i=0; i<2*n;++i){printf("%e ",R[i]);}printf("\n");
+  gettimeofday(&stopPCC,NULL);
+  timersub(&stopPCC,&startPCC,&runtimePCC);
+  float elapsed_time = 1.0*(long int)runtimePCC.tv_sec + 1.0E-6*(long int)runtimePCC.tv_usec;
 
   #if 0
   //read in results file for comparison
@@ -658,21 +632,22 @@ int main (int argc, char **argv) {
   DataType diff_2norm = 0.0;
   DataType relativeNorm = 0.0;
 
-  #if 0
-  for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
-  C_2norm=sqrt(C_2norm);
+  #if 1
+  //for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
+  //C_2norm=sqrt(C_2norm);
   for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
   R_2norm=sqrt(R_2norm);
-  diff = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
-  for (int i=0; i<m*p; i++) { 
-     diff[i]=pow(C[i]-R[i],2);
-     diff_2norm += diff[i]; 
-  }
+  //diff = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
+  //for (int i=0; i<m*p; i++) { 
+  //   diff[i]=pow(C[i]-R[i],2);
+  //   diff_2norm += diff[i]; 
+  //}
 
-  diff_2norm = sqrt(diff_2norm);
-  relativeNorm = diff_2norm/R_2norm;
-  printf("R_2Norm=%e, C_2Norm=%e, diff_2norm=%e relativeNorm=%e\n", R_2norm, C_2norm, diff_2norm, relativeNorm);
-  printf("relative diff_2Norm = %e in %e s m=%d n=%d p=%d GFLOPs=%e \n", relativeNorm, accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
+  //diff_2norm = sqrt(diff_2norm);
+  //relativeNorm = diff_2norm/R_2norm;
+  //printf("R_2Norm=%e, C_2Norm=%e, diff_2norm=%e relativeNorm=%e\n", R_2norm, C_2norm, diff_2norm, relativeNorm);
+  printf("R_2Norm=%e\n", R_2norm);
+  //printf("relative diff_2Norm = %e in %e s m=%d n=%d p=%d GFLOPs=%e \n", relativeNorm, accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
   #endif
 
 
@@ -685,9 +660,7 @@ int main (int argc, char **argv) {
     for(int i=0;i<m*p;++i) diff_file << R[i] << " " << C[i] << " " <<diff[i] << '\n';
     diff_file.close();
   #endif
-
-  printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
-
+  printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",elapsed_time, m,n,p, (5*2/1.0e9)*m*n*p/elapsed_time);
   return 0;
 }
 

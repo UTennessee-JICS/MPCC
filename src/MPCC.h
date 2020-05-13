@@ -10,11 +10,12 @@
 
   #ifdef MKL // MKL build is requested, import MKL
       #include <mkl.h>
+      #include <omp.h>
   #else
     #define NOMKL 1
     #include <math.h>
     #ifndef CUBLAS
-       //#include <cblas.h>
+       #include <cblas.h>
     #endif
   #endif
 
@@ -63,7 +64,7 @@
        #define LEAD_PARAM CblasRowMajor
   #else
       #define TRANS CUBLAS_OP_T
-      #define NOTRANS CUBLAS_OP_T //also transpose since cublas gemm is column major
+      #define NOTRANS CUBLAS_OP_N //also transpose since cublas gemm is column major
   #endif
 
 
@@ -130,11 +131,16 @@
       #define FREE mkl_free
       #define ALLOCATOR(n, type, align) mkl_calloc(n, type, align)
   #endif
-    
-  #define CHECKNA std::isnan
-  #define MISSING_MARKER std::nan("1")
-  #define NANF NAN //ceb
-
+  
+  #ifndef CUBLAS  
+    #define CHECKNA std::isnan
+    #define MISSING_MARKER std::nan("1")
+    #define NANF NAN //ceb
+  #else //cuda versions
+    #define CHECKNA isnan
+    #define MISSING_MARKER nanf("1")
+    #define NANF NAN //ceb
+  #endif
   // Forward declaration of the functions
   void vSqr (int l, DataType* in, DataType* out);
   void vMul (int l, DataType* in1, DataType* in2, DataType* out);
