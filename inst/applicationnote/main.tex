@@ -74,11 +74,11 @@ addressed.}
 The use of Pearson's correlation coefficient (PCC) is ubiquitous
 across all fields of biology ranging from agriculture to
 zoology. Large scale computation of correlations are found in many
-areas of biology and bioinformatics.  For example, genotype
+areas of biology and bioinformatics.  For example, genotype-genotype
 correlations are used to construct haplotypes, build genetic maps, and
 order markers within the genome. Pearson's correlations are also used
 in co-expression analysis \citep{Tesson:2010}, (genome wide)
-association analysis, reconstruction of genetic
+association analysis \citep{Cichonska:2016}, reconstruction of genetic
 networks \citep{Fukushima:2013}, weighted correlation network analysis
 (WGCNA) \citep{Horvath:2008} and correlated trait locus (CTL)
 mapping \citep{Arends2016a}.
@@ -101,27 +101,27 @@ problem sizes.
 % , especially when accounting for missing data.
 
 
-Consider the case where correlation is computed within a set of
-phenotypes. The BxD family is a panel of 150 recombinant inbred mice
+The BxD family is a panel of 150 recombinant inbred mouse lines
 derived from parents C57BL/6J and DBA/2J \citep{Ashbrook:2019}. The
 BxD data collection in Genenetwork consists of high-density genotypes
 with 7,000 classical phenotypes and several data sets containing
-100,000+ gene expression phenotypes. Statistics are often computed in
+100,000+ gene expression phenotypes. Consider the case where correlation 
+is computed within a set of phenotypes. Statistics are often computed in
 the R language for statistical computing \citep{R:2005}. R's default
 $cor()$ implementation of Pearson's correlation is pairwise and
 written in C and is especially slow when accounting for missing
 data. Simply removing individuals with missing phenotype or genotype
 data does not work here because most studies use different subsets of
-these 150 mice. A matrix-style correlation computation based on
+these 150 mouse lines. A matrix-style correlation computation based on
 removing rows with missing phenotypes would therefore end up being
-empty.  With MPCC we implemented a novel matrix based approach, that
-is a drop-in replacement for $cor()$ and can handle missing data
+empty. With MPCC we implemented a novel matrix based approach, that
+is a drop-in replacement for $cor()$ function and can handle missing data
 without loss of performance.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{img/figure02new.eps}
-  \caption{ \small Speed comparison of MPCC versus the native R $cor$
+  \caption{ \small Speed comparison of MPCC versus the native R $cor()$
   function shows increased performance with increased matrix
   sizes. Square matrices (green) run faster than the non-square
   matrices (blue).  The effect of handling missing data (0 to 50\%) is
@@ -141,15 +141,15 @@ without loss of performance.
 
 \section{Approach}
 
-We started work on optimizing the speedup of correlations by writing a
-version that is algorithmically identical to the R $cor()$ function
+We started work on optimizing the speed at which correlations are computed 
+by writing a version that is algorithmically identical to the R $cor()$ function
 (see supplement). Next, we added multi-threading by introducing
 OpenMP. This provided a limited speedup, typically in the order of
 3.5$\times$ compared to the single core version.  Next, we wrote MPCC,
 a matrix implementation of Pearson's correlation that makes effective
 use of hardware Advanced Vector Extensions (AVX) instructions
 introduced by Intel in 2011. This approach sped up computations up to
-$200\times$ on a 28-core machine (Figure~\ref{fig:fig2}).  The MPCC
+$200\times$ on a 28-core machine (Figure~\ref{fig:fig2}). The MPCC
 matrix version reformulates the original algorithm into a series of
 matrix-matrix products and element-wise matrix operations. MPCC
 handles missing data by using a novel bit-masking approach that
@@ -157,12 +157,12 @@ leverages existing matrix-matrix multiplication implementations from,
 for example, OpenBLAS (Supplement 1 - 'Missing Data Bit-masking').
 MPCC leverages the optimized speed of OpenBLAS or, alternatively,
 Intel\textregistered{} MKL, to obtain maximum performance on systems
-that support the AVX instruction sets.
+that support the AVX instruction set.
 
 To benchmark MPCC for different matrix sizes we computed pairwise
 correlation between genotypes of the BxD family.  Genotype data in the
-BxD family is complete with only a few heterozygous or `missing' loci
-remaining, i.e., it benchmarks MPCC versus $cor()$ when a small amount
+BxD family is complete with only a few heterozygous or 'missing' loci
+remaining, i.e., it benchmarks MPCC versus $cor()$ when only a small amount
 of data is missing.  Next we computed the speed improvement of MPCC
 versus R's $cor()$ for these matrices. We increased step-wise the
 amount of missing data by masking genotypes. Even on a single core
@@ -182,7 +182,7 @@ which can act as an example for other programming languages.
 
 MPCC is a matrix based computational reimplementation of the original
 correlation algorithm. MPCC makes use of multi-threading and modern
-vector extensions of the CPU hardware.  The bit-masking missing data
+vector extensions of the CPU hardware.  The  missing data bit-masking
 approach can be generalized to other algorithms which rely on
 matrix-matrix multiplication and may also be suitable for GPU
 computing.
