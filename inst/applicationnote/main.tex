@@ -105,9 +105,9 @@ Simply removing individuals with missing phenotype or genotype data does
 not work, because most studies use different subsets of the available 
 150 BXD lines. A matrix-style PCC computation based on removing rows 
 with missing phenotypes would simply end up being empty. With MPCC we 
-implemented a novel matrix based approach, that is a drop-in replacement 
-for R's default $cor()$ function and can handle missing data without 
-loss of performance.
+implemented a novel matrix based approach for PCC computation, that is a 
+drop-in replacement for R's default $cor()$ function and can handle 
+missing data without loss of performance.
 
 \begin{figure}[H]
 \centering
