@@ -93,9 +93,9 @@ moderate to large problem sizes.
 The BXD family is a panel of 150 recombinant inbred mouse lines
 derived from parents C57BL/6J and DBA/2J \citep{Ashbrook:2019}. The
 BXD data collection in GeneNetwork consists of high-density genotypes
-with 7,000 classical phenotypes and more than 120 data sets containing
+with 7,000 classical phenotypes and over 120 independent data sets containing
 between 20,000 to 1.2 million gene expression phenotypes. Consider 
-the problem size when correlations are computed within or between sets 
+the problem size when PCC are computed within or between sets 
 of gene expression phenotypes. 
 
 Statistics are often computed in the R language for statistical computing 
@@ -111,7 +111,7 @@ loss of performance.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{img/figure02new.eps}
+\includegraphics[width=\linewidth]{img/figure02big.eps}
   \caption{ \small Speed comparison of MPCC versus the native R $cor()$
   function shows increased performance with increased matrix
   sizes. Square matrices (green) run faster than the non-square
@@ -121,7 +121,7 @@ loss of performance.
   Multi-threaded performance for a 3500x3500 matrix shows a potential
    \textasciitilde{}$200$-fold speedup compared to the default $cor()$ function.  All
   timings were performed on a system with 28 cores (56 hyper-threaded)
-  Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.  } \label{fig:fig2}
+  Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.  } \label{fig:fig1}
 \end{figure}
 
 \vspace*{-10mm}
@@ -134,32 +134,35 @@ loss of performance.
 
 We started work on optimizing the speed at which correlations are computed 
 by writing a version that is algorithmically identical to the R $cor()$ function
-(see supplement). To this version OpenMP multi-threading support was added. 
+(Supplement 1 and 2). To this version OpenMP multi-threading support was added. 
 This provided a limited speedup, typically in the order of
-3.5$\times$ compared to the single core version. In the next iteration, 
-we wrote MPCC, a matrix implementation of PCC that makes effective
+3.5$\times$ compared to the single core version. 
+
+In the next iteration, we wrote MPCC, a matrix implementation of PCC that makes effective
 use of hardware Advanced Vector Extensions (AVX) instructions
 introduced by Intel in 2011. This approach sped up computations up to
-$200\times$ on a 28-core machine (Figure~\ref{fig:fig2}). The MPCC
+$200\times$ on a 28-core machine (Figure~\ref{fig:fig1}). The MPCC
 matrix version reformulates the original algorithm into a series of
-matrix-matrix products and element-wise matrix operations. MPCC
-handles missing data by using a novel bit-masking approach that
+matrix-matrix products and element-wise matrix operations (Supplement 3 - 
+'The Matrix Version'). 
+
+MPCC handles missing data by using a novel bit-masking approach that
 leverages existing matrix-matrix multiplication implementations from,
-for example, OpenBLAS (Supplement 1 - 'Missing Data Bit-masking').
+for example, OpenBLAS (Supplement 4 - 'Missing Data Bit-masking').
 MPCC leverages the optimized speed of OpenBLAS or, alternatively,
 Intel\textregistered{} MKL, to obtain maximum performance on systems
 that support the AVX instruction set.
 
 To benchmark MPCC for different matrix sizes we computed pairwise
-correlation between genotypes of the BxD family.  Genotype data in the
+correlation between genotypes of the BxD family. Genotype data in the
 BxD family is complete with only a few heterozygous or 'missing' loci
 remaining, i.e., it benchmarks MPCC versus $cor()$ when only a small amount
-of data is missing. We then computed the speed improvement of MPCC
-versus R's $cor()$ using randomly generated phenotype matrices. We step-wise 
-increased the amount of missing data. Even on a single core MPCC showed 
-a \textasciitilde{}$5$-fold speedup compared to the $cor()$
+of data is missing (Supplemental Fig. 1). Speed improvement of MPCC
+versus R's $cor()$ were computed using randomly generated phenotype matrices. 
+We step-wise increased the amount of missing data. Even on a single core 
+MPCC showed a \textasciitilde{}$5$-fold speedup compared to the $cor()$
 function provided in R. With multi-threading MPCC gains with every 
-core added, up to \textasciitilde{}$200$-fold in our tests (Figure \ref{fig:fig2}).
+core added, up to \textasciitilde{}$200$-fold in our tests (Figure \ref{fig:fig1}).
 
 MPCC can be installed as an R package. MPCC is written in C$++$, and
 provides a foreign function interface (FFI). MPCC can therefore be
