@@ -34,9 +34,9 @@ for(m in c(250, 500, 1000, 1500, 2500)){
     points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(i/5,i/5,i/5,1), t = 'l', lwd=1, lty=1)
   }
   if(i == 1){
-    points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,1,0,1), t = 'l', lwd=i)
+    points(unique(inM[, "n"]), smooth(mean.openblas), col="skyblue3", t = 'l', lwd=2)
   }else{
-    points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,0,1,1), t = 'l', lwd=i)
+    points(unique(inM[, "n"]), smooth(mean.openblas), col="orangered", t = 'l', lwd=i)
   }
 
   density <- density - 10
@@ -65,14 +65,14 @@ for(m in c(2000, 3500)){
   for(x in 1:length(min.openblas)){
     points(c(unique(inM[, "n"])[x], unique(inM[, "n"])[x]), c(smooth(mean.openblas)[x] - sd.openblas[x], smooth(mean.openblas)[x] + sd.openblas[x]), col=rgb(i/3,i/3,i/3,1), t = 'l', lwd=1, lty=1)
   }
-  points(unique(inM[, "n"]), smooth(mean.openblas), col=rgb(0,1,0,1), t = 'l', lwd=i)
+  points(unique(inM[, "n"]), smooth(mean.openblas), col="skyblue3", t = 'l', lwd=i+1)
 
   density <- density - 10
   angle <- angle + 45
   i <- i + 0.5
 }
 op <- par(cex = 0.8)
-legend("topleft", c(paste0("A=", c(500, 1000, 1500, 2500), "*n, B=250*n"), "A=250*n, B=250*n", "A=2000*n, B=2000*n", "A=3500*n, B=3500*n"), lwd=c(seq(1,2.5,0.5), 1, 1.5, 2), col=c("blue", "blue", "blue", "blue", "green", "green", "green"))
+legend("topleft", c(paste0("A=", c(500, 1000, 1500, 2500), "*n, B=250*n"), "A=250*n, B=250*n", "A=2000*n, B=2000*n", "A=3500*n, B=3500*n"), lwd=c(seq(1,2.5,0.5), 1, 1.5, 2), col=c("orangered", "orangered", "orangered", "orangered", "skyblue3", "skyblue3", "skyblue3"))
 
 dev.off()
 
