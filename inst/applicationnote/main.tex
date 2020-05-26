@@ -41,21 +41,22 @@ addressed.}
 \editor{Associate Editor: XXXXXXX}
 
 \abstract{ \textbf{Motivation:} With the rapidly growing amount of 
-  data acquired from sequencing, combined with a growing body of 
-  phenotype data from medical and experimental biology, computing 
-  correlations is a recurring bottleneck. Especially computation 
-  of correlations on incomplete data is slow.  Here we present a 
-  novel high-performance and robust matrix-based Pearson 
-  correlation coefficient (MPCC) algorithm that handles missing 
-  data elegantly and makes effective use of modern CPU
-  Advanced Vector Extensions (AVX). \\
-\textbf{Results:} Our method is a reformulation of the
-  original Pearson correlation coeffient algorithm where
+  data acquired by high-throughput sequencing technologies, 
+  combined with a growing body of phenotype data from medical and 
+  experimental biology, computing correlation coefficients is a 
+  recurring bottleneck. This bottleneck is amplified in the 
+  presence of missing data.\\
+\textbf{Results:} Here we present a novel high performance, 
+  robust, matrix-based PCC algorithm that greatly reduces 
+  the bottleneck associated with the PCC calculation, with any 
+  amount of missing data. Our method is a reformulation of the
+  standard Pearson correlation coeffient algorithm where
   the lion's share of the computation is handled by fast
-  matrix-matrix products. On a single Intel Xeon Gold 6148
-  $@$ $2.4$ GHz (Skylake) CPU MPCC achieves 4.3 TFlop/s in single
-  precision (i.e., $77\%$ of the theoretical peak). We show how MPCC
-  outperforms the existing implementation in R by around $200$-fold. \\
+  matrix-matrix products and element-wise matrix operations. 
+  On a single Intel Xeon Gold 6148 $@$ $2.4$ GHz (Skylake) CPU our 
+  algorithm achieves 4.3 TFlop/s in single  precision (i.e., 
+  $77\%$ of the theoretical peak). We show how MPCC outperforms 
+  the existing implementation in R by around $200$-fold. \\
 \textbf{Availability:} Our source code is available as a C
   library for R published under a dual licence, the free and open
   source software GPL-v3 licence as well as the 3-Clause BSD License.
@@ -110,10 +111,12 @@ missing phenotypes would simply end up being empty.
 With MPCC we implemented a novel matrix based approach for PCC 
 computation, that is a drop-in replacement for R's default $cor()$ 
 function and can handle missing data without loss of performance.
+\vspace*{-4mm}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{img/figure02big.eps}
+  \vspace{-8mm}
   \caption{ \small Speed comparison of MPCC versus the native R $cor()$
   function shows increased performance with increased matrix
   sizes. Square matrices (blue) run faster than the non-square
@@ -122,15 +125,11 @@ function and can handle missing data without loss of performance.
   handled by MPCC bit-masking has limited effect on performance.
   Multi-threaded performance for a 3500x3500 matrix shows a potential
    \textasciitilde{}$200$-fold speedup compared to the default $cor()$ function.  All
-  timings were performed on a system with 28 cores (56 hyper-threaded)
+  timings were performed on a system with 28 cores (56 hyper-threads)
   Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.  } \label{fig:fig1}
 \end{figure}
 
-\vspace*{-10mm}
-
-%  MPCC always performs missing data Bit-masking, while the R
-%  $cor()$ function suffers from increased runtime with increasing
-%  amount of missing data.
+\vspace*{-12mm}
 
 \section{Approach}
 
@@ -140,24 +139,22 @@ by writing a version that is algorithmically identical to the R $cor()$ function
 This provided a limited speedup, typically in the order of
 3.5$\times$ compared to the single core version. 
 
-In the next iteration, we wrote MPCC, a matrix implementation of PCC that makes effective
-use of hardware Advanced Vector Extensions (AVX) instructions
-introduced by Intel in 2011. This approach sped up computations up to
-$200\times$ on a 28-core machine (Fig. \ref{fig:fig1}). The MPCC
-matrix version reformulates the original algorithm into a series of
-matrix-matrix products and element-wise matrix operations (Supplement 3 - 
-'The Matrix Version'). 
+In the next iteration, we wrote MPCC, an implementation of PCC that can 
+leverage the advantages offered by any math library that is optimized 
+for matrix-based operations, such as Intel’s Math Kernel Library (MKL), 
+IBM’s Engineering and Scientific Subroutine Library (ESSL), the AMD 
+Core Math Library (ACML), and Nvidia’s CUBLAS. This approach sped up 
+computations up to $200\times$ on a 28-core machine (Fig. \ref{fig:fig1}). 
+MPCC reformulates the original algorithm into a series of matrix-matrix 
+products and element-wise matrix operations (Supplement 3 - 'The Matrix Version'). 
 
 MPCC handles missing data by using a novel bit-masking approach that
 leverages existing matrix-matrix multiplication implementations from,
 for example, OpenBLAS (Supplement 4 - 'Missing Data Bit-masking').
-MPCC leverages the optimized speed of OpenBLAS or, alternatively,
-Intel\textregistered{} MKL, to obtain maximum performance on systems
-that support the AVX instruction set.
 
-To benchmark MPCC for different matrix sizes we computed pairwise
-correlation between genotypes of the BxD family. Genotype data in the
-BxD family is complete with only a few heterozygous or 'missing' loci
+To benchmark MPCC on a real-world problem pairwise correlation between 
+genotypes of the BXD family were computed. Genotype data in the BXD 
+family is complete with only a few heterozygous or 'missing' loci 
 remaining, i.e., it benchmarks MPCC versus $cor()$ when only a small amount
 of data is missing (Supplemental Fig. 1). Furthermore, speed improvement of MPCC
 versus R's $cor()$ were computed using randomly generated phenotype matrices. 
@@ -173,22 +170,23 @@ called from any other computer language using FFI. The source
 repository includes an FFI binding for the R programming language
 which can act as an example for other programming languages.
 
-\vspace*{2mm}
+%\vspace*{2mm}
 \section{Discussion}
 
 MPCC is a reimplementation of the original PCC algorithm using matrix-matrix 
-multiplication. MPCC makes use of multi-threading and modern vector 
-extensions of the CPU hardware. The missing data bit-masking approach 
-can handle missing data without loss of performance, and can be generalized 
-to other algorithms which rely on matrix-matrix multiplication. 
+multiplication and element-wise matrix operations. MPCC makes use of 
+multi-threading and modern vector extensions of CPU hardware. The missing 
+data bit-masking approach can handle missing data without loss of performance, 
+and can be generalized to other algorithms which rely on matrix-matrix multiplication. 
 
 MPCC as well as the missing data bit-masking approach were recently ported 
 to run on a GPU. However, the GPU implementation has not yet been added to 
-the R package distribution.
+the R package distribution. The GPU implementation is available using the FFI, and 
+will be made available from the R package in the near future.
 
 With this work we not only introduce a faster routine that reduces
 regularly occurring bottlenecks in large-scale correlation computations, but
-we also show that it can pay off to revisit 'obvious' implementations
+also show that it can pay off to revisit 'obvious' implementations
 of routines in common use today that were written over 20 years
 ago. Computer hardware and architecture is still changing and
 dedicated optimization work may benefit both interactivity for
