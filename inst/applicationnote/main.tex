@@ -124,7 +124,7 @@ function and can handle missing data without loss of performance.
   handled by MPCC bit-masking has limited effect on performance.
   Multi-threaded performance for a 3500x3500 matrix shows a
   potential \textasciitilde{}$200$-fold speedup compared to the
-  default $cor()$ function.  All timings were performed with OpenBlas
+  default $cor()$ function.  All timings were performed with OpenBLAS
   on a system with 28 cores (56 hyper-threads) Intel(R) Xeon(R) CPU
   E5-2680 v4 @ 2.40GHz.  } \label{fig:fig1}
 \end{figure}
@@ -144,18 +144,19 @@ In the next iteration, we wrote MPCC, an implementation of PCC that
 can leverage the advantages offered by any math library that is
 optimized for matrix-based operations, such as Intel’s Math Kernel
 Library (MKL), IBM’s Engineering and Scientific Subroutine Library
-(ESSL) and the AMD Core Math Library (ACML). With OpenBlas this
-approach sped up computations up to $200\times$ on a 28-core machine
-(Fig. \ref{fig:fig1}).  MPCC reformulates the original algorithm into
-a series of matrix-matrix products and element-wise matrix operations
-(Supplement 3 - 'The Matrix Version').
+(ESSL) and the AMD Core Math Library (ACML). With OpenBLAS \citep{Zhang:2011}, an 
+open-source implementation of the BLAS (Basic Linear Algebra 
+Subprograms), this approach sped up computations up to $200\times$ 
+on a 28-core machine (Fig. \ref{fig:fig1}). MPCC reformulates the 
+original algorithm into a series of matrix-matrix products and 
+element-wise matrix operations (Supplement 3 - 'The Matrix Version').
 
 MPCC handles missing data by using a novel bit-masking approach that
 leverages existing matrix-matrix multiplication implementations from,
-for example, OpenBLAS (Supplement 4 - 'Missing Data Bit-masking').
+for example, OpenBLAS  (Supplement 4 - 'Missing Data Bit-masking').
 
-To benchmark MPCC on a real-world problem pairwise correlation between
-genotypes of the BXD family were computed. Genotype data in the BXD
+To benchmark MPCC on a real-world problem, we computed pairwise 
+correlation between genotypes of the BXD family. Genotype data in the BXD
 family is complete with only a few heterozygous or 'missing' loci
 remaining, i.e., it benchmarks MPCC versus $cor()$ when only a small amount
 of data is missing (Supplemental Fig. 1). Furthermore, speed improvement of MPCC
@@ -194,6 +195,7 @@ dedicated optimization work may benefit both interactivity for
 end-users and large-scale computations on high-perfomance compute
 clusters at the same time.
 
+\vspace*{-6mm}
 \section*{Funding}
 
 We thank the support of XSEDE/NSF startup MCB190140, the UT Center for
