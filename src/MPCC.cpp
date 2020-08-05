@@ -592,9 +592,10 @@ int main (int argc, char **argv) {
   #endif
   //printf("R= "); for(int i=0; i<m*p;++i){printf("%e ",R[i]);}printf("\n");
   //printf("R= "); for(int i=0; i<2*n;++i){printf("%e ",R[i]);}printf("\n");
-  gettimeofday(&stopPCC,NULL);
-  timersub(&stopPCC,&startPCC,&runtimePCC);
-  float elapsed_time = 1.0*(long int)runtimePCC.tv_sec + 1.0E-6*(long int)runtimePCC.tv_usec;
+
+  //gettimeofday(&stopPCC,NULL);
+  //timersub(&stopPCC,&startPCC,&runtimePCC);
+  //float elapsed_time = 1.0*(long int)runtimePCC.tv_sec + 1.0E-6*(long int)runtimePCC.tv_usec;
 
   #if 0
   //read in results file for comparison
@@ -635,8 +636,8 @@ int main (int argc, char **argv) {
   #if 1
   //for (int i=0; i<m*p; i++) { C_2norm += C[i]*C[i]; }
   //C_2norm=sqrt(C_2norm);
-  for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
-  R_2norm=sqrt(R_2norm);
+  //for (int i=0; i<m*p; i++) { R_2norm += R[i]*R[i]; }
+  //R_2norm=sqrt(R_2norm);
   //diff = (DataType *)ALLOCATOR( m*p,sizeof( DataType ), 64 );
   //for (int i=0; i<m*p; i++) { 
   //   diff[i]=pow(C[i]-R[i],2);
@@ -646,7 +647,7 @@ int main (int argc, char **argv) {
   //diff_2norm = sqrt(diff_2norm);
   //relativeNorm = diff_2norm/R_2norm;
   //printf("R_2Norm=%e, C_2Norm=%e, diff_2norm=%e relativeNorm=%e\n", R_2norm, C_2norm, diff_2norm, relativeNorm);
-  printf("R_2Norm=%e\n", R_2norm);
+  //printf("R_2Norm=%e\n", R_2norm);
   //printf("relative diff_2Norm = %e in %e s m=%d n=%d p=%d GFLOPs=%e \n", relativeNorm, accumR, m,n,p, (5*2/1.0e9)*m*n*p/accumR);
   #endif
 
@@ -660,7 +661,7 @@ int main (int argc, char **argv) {
     for(int i=0;i<m*p;++i) diff_file << R[i] << " " << C[i] << " " <<diff[i] << '\n';
     diff_file.close();
   #endif
-  printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",elapsed_time, m,n,p, (5*2/1.0e9)*m*n*p/elapsed_time);
+  //printf("completed in %e seconds, size: m=%d n=%d p=%d GFLOPs=%e \n",elapsed_time, m,n,p, (5*2/1.0e9)*m*n*p/elapsed_time);
   return 0;
 }
 

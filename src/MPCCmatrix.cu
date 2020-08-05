@@ -12,10 +12,11 @@
 
 #include "MPCC.h"
 #include <cuda.h>
+#include <cublas.h>//ceb
 #include <cublas_v2.h>//ceb
 
-#include <helper_functions.h>
-#include <helper_cuda.h>
+//#include <helper_functions.h>
+//#include <helper_cuda.h>
 
 using namespace std;
 
@@ -30,7 +31,11 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 void inline checkError(cublasStatus_t status, const char *msg){
     if (status != CUBLAS_STATUS_SUCCESS){
-        printf("%s", msg);
+        printf("checkError failure: %s", msg);
+        if(status != CUBLAS_STATUS_NOT_INITIALIZED)
+             printf("status=CUBLAS_STATUS_NOT_INITIALIZED\n");
+        else if(status != CUBLAS_STATUS_ALLOC_FAILED)
+             printf("status=CUBLAS_STATUS_ALLOC_FAILED\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -127,8 +132,8 @@ int pcc_matrix(int m, int n, int p,
 
   // Create a handle for CUBLAS
   cublasHandle_t handle;
-  checkError(cublasCreate(&handle), "cublasCreate() error!\n");
-
+  //checkError(cublasCreate(&handle), "cublasCreate() error!\n");
+  cublasCreate(&handle);
   //allocate and initialize and align memory needed to compute PCC
   DataType* UnitA = ( DataType*)ALLOCATOR( m*n, sizeof(DataType), 64 );//__assume_aligned(UnitA, 64);
   DataType* UnitB = sameAB ? UnitA : ( DataType*)ALLOCATOR( n*p, sizeof(DataType), 64 );//__assume_aligned(UnitB, 64);  
