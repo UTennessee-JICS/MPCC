@@ -20,12 +20,12 @@ available.
 #### R language for statistical computing
 
 MPCC can be used directly from the R language for statistical computing. To learn how to install it 
-please visit the [inst/README_R.md](R instructions).
+please visit the [R instructions](inst/README_R.md).
 
 #### Using MPCC from another language
 
 MPCC can be directly used in C/C++ projects, and other languages via the Foreign Function Interface (FFI)
-please visit the [inst/README_CPP.md](C/C++ instructions) for more information.
+please visit the [C/C++ instructions](inst/README_CPP.md) for more information.
 
 ### Issues
 
