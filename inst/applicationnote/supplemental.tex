@@ -2,7 +2,12 @@
 \usepackage{algorithmic}
 \usepackage{algorithm}
 
+\makeatletter
+\renewcommand{\fnum@figure}{Supplemental Fig. \thefigure}
+\makeatother
+
 \begin{document}
+
 \title[Supplemental file 1]{Supplemental file to the MPCC paper}
 
 \section{Pearson$'$s Correlation Coefficient}
@@ -94,7 +99,7 @@ elements in the $i$-th vector of $A$, and the $j$-th vector of $B$
 such that there is no missing data in either $A$ or $B$, and $P$ is 
 a matrix of PCC calculations.
 
-\section{Missing Data Handling} \label{MDBM}
+\section{Missing Data masking} \label{MDBM}
 In the summation functions of the Matrix version (lines 1-4), we use masking matrices to compute 
 sums efficiently. For example: $\sum A=\text{SGEMM(}A_Z,U_B\text{)}$, where $A_Z$ is the set of 
 vectors $A$ with a zero at every missing data location, and $U_B$ is a matrix of $1's$ with $0's$ 
@@ -120,8 +125,8 @@ $A$ and $B$ and results in $M$.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{img/figure01.eps}
-  \caption*{ \small Genotype to genotype correlation between genetic markers on chromosome 
+\includegraphics[width=\linewidth]{supplement1.eps}
+  \caption{ \small Genotype to genotype correlation between genetic markers on chromosome 
     1 of the BxD family. Pairwise correlation between all 7,321 marker was \textasciitilde{}6 times 
     faster using MPCC. Computation was performed on a Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz.  }
 \end{figure}

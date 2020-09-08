@@ -1,6 +1,4 @@
-\PassOptionsToPackage{utf8}{inputenc}
 \documentclass{bioinfo}
-
 \copyrightyear{2020} \pubyear{2020}
 
 \access{Advance Access Publication Date: day month 2020}
@@ -22,10 +20,10 @@ Udit Gulati\,$^{\text{\sfb 3}}$,
 Christian Fischer\,$^{\text{\sfb 4}}$,
 Robert W. Williams\,$^{\text{\sfb 4}}$,
 Pjotr Prins\,$^{\text{\sfb 4}}$,
-Glenn Brook\,$^{\text{\sfb 2, *}}$}
+R. Glenn Brook\,$^{\text{\sfb 2, *}}$}
 \address{$^{\text{\sf 1}}$Z{\"u}chtungsbiologie und molekulare
 Genetik, Albrecht Daniel Thaer-Institut, Berlin, 10115, Germany \\
-$^{\text{\sf 2}}$The Joint Institute for Computational Sciences,
+$^{\text{\sf 2}}$Joint Institute for Computational Sciences,
 University of Tennessee, Oak Ridge, TN 37830, USA\\
 $^{\text{\sf 3}}$Computer Science Department, Indian Institute of
 Information Technology, Una, Himachal Pradesh, India\\
@@ -46,11 +44,11 @@ addressed.}
   experimental biology, computing correlation coefficients is a
   recurring bottleneck. This bottleneck is amplified in the
   presence of missing data.\\
-\textbf{Results:} Here we present a novel high performance,
+\textbf{Results:} Here we present a novel, high performance,
   robust, Matrix Pearson Correlation Coefficient (MPCC) algorithm that
-  greatly reduces the bottleneck associated with the PCC calculation
+  greatly reduces the bottleneck associated with the Pearson correlation calculation
   with any amount of missing data. Our method is a reformulation of
-  the standard PCC algorithm where the lion's share of MPCC
+  the standard Pearson correlation algorithm where the lion's share of MPCC
   is handled by fast matrix-matrix products and element-wise matrix
   operations.  On a single Intel Xeon Gold 6148 $@$ $2.4$ GHz
   (Skylake) CPU our algorithm achieves 4.3 TFlop/s in single precision
@@ -110,18 +108,18 @@ missing phenotypes would end up being empty.
 
 With MPCC we implemented a novel matrix based approach for PCC
 computation that acts as a drop-in replacement for R's default $cor()$
-function and can handle missing data without loss of performance.
+function and can handle missing data with minimal loss of performance.
 \vspace*{-4mm}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\linewidth]{img/figure02big.eps}
+\includegraphics[width=\linewidth]{figure1.eps}
   \vspace{-8mm} \caption{ \small Speed comparison of MPCC versus the
   native R $cor()$ function shows increased performance with increased
   matrix sizes. Square matrices (blue) run faster than the non-square
   matrices (red).  The effect of handling missing data (0 to 50\%) is
   visualized with error bars - i.e. these show that missing data
-  handled by MPCC bit-masking has limited effect on performance.
+  handled by MPCC masking has limited effect on performance.
   Multi-threaded performance for a 3500x3500 matrix shows a
   potential \textasciitilde{}$200$-fold speedup compared to the
   default $cor()$ function.  All timings were performed with OpenBLAS
@@ -142,8 +140,8 @@ version.
 
 In the next iteration, we wrote MPCC, an implementation of PCC that
 can leverage the advantages offered by any math library that is
-optimized for matrix-based operations, such as Intel’s Math Kernel
-Library (MKL), IBM’s Engineering and Scientific Subroutine Library
+optimized for matrix-based operations, such as Intel's Math Kernel
+Library (MKL), IBM's Engineering and Scientific Subroutine Library
 (ESSL) and the AMD Core Math Library (ACML). With OpenBLAS \citep{Zhang:2011}, an 
 open-source implementation of the BLAS (Basic Linear Algebra 
 Subprograms), this approach sped up computations up to $200\times$ 
@@ -151,9 +149,9 @@ on a 28-core machine (Fig. \ref{fig:fig1}). MPCC reformulates the
 original algorithm into a series of matrix-matrix products and 
 element-wise matrix operations (Supplement 3 - 'The Matrix Version').
 
-MPCC handles missing data by using a novel bit-masking approach that
+MPCC handles missing data by using a novel masking approach that
 leverages existing matrix-matrix multiplication implementations from,
-for example, OpenBLAS  (Supplement 4 - 'Missing Data Bit-masking').
+for example, OpenBLAS  (Supplement 4 - 'Missing Data masking').
 
 To benchmark MPCC on a real-world problem, we computed pairwise 
 correlation between genotypes of the BXD family. Genotype data in the BXD
@@ -179,10 +177,10 @@ which can act as an example for other programming languages.
 MPCC is a reimplementation of the original PCC algorithm using matrix-matrix
 multiplication and element-wise matrix operations. MPCC makes use of
 multi-threading and modern vector extensions of CPU hardware. The missing
-data bit-masking approach can handle missing data without loss of performance,
+data masking approach can handle missing data without loss of performance,
 and can be generalized to other algorithms which rely on matrix-matrix multiplication.
 
-MPCC as well as the missing data bit-masking approach were recently
+MPCC as well as the missing data masking approach were recently
 ported to run on a GPU. The GPU implementation is available using the
 FFI, and will be made available from the R package.
 
@@ -198,11 +196,11 @@ clusters at the same time.
 \vspace*{-6mm}
 \section*{Funding}
 
-We thank the support of XSEDE/NSF startup MCB190140, the UT Center for
-Integrative and Translational Genomics, and funds from the UT-ORNL
-Governor's Chair, NIGMS Systems Genetics and Precision Medicine
-Project R01 GM123489, NIDA grant P30 DA044223, NIAAA U01 AA013499 and
-U01 AA016662.\\
+We thank the support of XSEDE/NSF startup MCB190140, the UT Joint Institute 
+for Computational Sciences, the UT Center for Integrative and Translational 
+Genomics, and funds from the UT-ORNL Governor's Chair, NIGMS Systems 
+Genetics and Precision Medicine Project R01 GM123489, NIDA grant P30 
+DA044223, NIAAA U01 AA013499 and U01 AA016662.\\
 \textit{Conflict of Interest:} none declared.
 
 \vspace*{-5mm}
