@@ -27,6 +27,11 @@ please visit the [R instructions](inst/README_R.md).
 MPCC can be directly used in C/C++ projects, and other languages via the Foreign Function Interface (FFI)
 please visit the [C/C++ instructions](inst/README_CPP.md) for more information.
 
+### Tests
+
+MPCC comes with an extensive test-suite to make sure the results are identical to correlation coefficients 
+computed by e.g. the cor() function in R. The R regression test-suite can be found (here)[tests/]
+
 ### Issues
 
 Issues can be raised through the github issue tracker.
