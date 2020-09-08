@@ -1,8 +1,0 @@
-{
- p = 7.000 phenotypes, m = 20.000 genes, n = 150 ind =~ 1h.30 --vs-- 2 min
-
- CTL mapping
- x nGeno (AA, (AB), BB) = 2   = 3 h --vs-- 4 min
- x nMark 350 m / Chr = 7000 tests =  3h x 7000 = 2,4 Y (875 days) --vs-- 4min x 7000 = 19,4 days
-}
-x per Gene Datasets (2-3 / Tissue 40) = 80 - 120

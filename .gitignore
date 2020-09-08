@@ -22,3 +22,7 @@ supplemental.dvi
 supplemental.log
 supplemental.pdf
 src/MPCC.dll
+*.pdf
+*.tmp
+*.eps
+*.sty
